@@ -1,0 +1,214 @@
+GET googleapisgamesv1 players {playerId} snapshots
+GET googleapisgamesv1 players {playerId} snapshots
+POST googleapisgamesv1 pushtokens remove
+POST googleapisgamesv1 pushtokens remove
+POST googleapisgamesv1 rooms create
+POST googleapisgamesv1 rooms create
+POST googleapisgamesv1management scores reset
+POST googleapisgamesv1management scores reset
+POST googleapisgamesv1 achievements {achievementId} unlock
+POST googleapisgamesv1 achievements {achievementId} unlock
+GET googleapisplusv1 comments {commentId}
+GET googleapisplusv1 comments {commentId}
+GET googleapisgamesv1 turnbasedmatches
+GET googleapisgamesv1 turnbasedmatches
+POST googleapisuploadgamesv1configuration images {resourceId} imageType {imageType}
+POST googleapisuploadgamesv1configuration images {resourceId} imageType {imageType}
+POST googleapisuploadgamesv1configuration images {resourceId} imageType {imageType}
+POST googleapisuploadgamesv1configuration images {resourceId} imageType {imageType}
+POST googleapisgamesv1management events {eventId} reset
+POST googleapisgamesv1management events {eventId} reset
+GET googleapisplusv1 people userId activities collection
+GET googleapisplusv1 people userId activities collection
+GET googleapisgamesv1 achievements
+GET googleapisgamesv1 achievements
+POST googleapisgamesv1configuration applications {applicationId} achievements
+POST googleapisgamesv1configuration applications {applicationId} achievements
+GET googleapisgamesv1 rooms {roomId}
+GET googleapisgamesv1 rooms {roomId}
+GET googleapisgamesv1 leaderboards {leaderboardId}
+GET googleapisgamesv1 leaderboards {leaderboardId}
+GET googleapisplusv1 people {userId}
+GET googleapisplusv1 people {userId}
+POST googleapisgamesv1 achievements {achievementId} setStepsAtLeast
+POST googleapisgamesv1 achievements {achievementId} setStepsAtLeast
+POST googleapisgamesv1 achievements updateMultiple
+POST googleapisgamesv1 achievements updateMultiple
+POST apitwitter1.1 mutes users destroy.json
+POST apitwitter1.1 mutes users destroy.json
+POST googleapisuploadgamesv1configuration images {resourceId} imageType {imageType}
+POST googleapisuploadgamesv1configuration images {resourceId} imageType {imageType}
+GET apitwitter1.1 friendships lookup.json
+GET apitwitter1.1 friendships lookup.json
+GET apitwitter1.1 friendships lookup.json
+GET apitwitter1.1 friendships lookup.json
+POST apitwitter1.1 favorites destroy.json
+POST apitwitter1.1 favorites destroy.json
+POST scriptgoogleapisv1 scripts {scriptId}:run
+POST scriptgoogleapisv1 scripts {scriptId}:run
+GET adsapitwitter1 accounts {account_id} tailored_audience_changes
+GET adsapitwitter1 accounts {account_id} tailored_audience_changes
+GET graphfacebook{page}
+GET graphfacebook{page}
+GET graphfacebookv2.9 {application-id} object_types
+GET graphfacebookv2.9 {application-id} object_types
+POST googlem8 feeds contacts {userEmail} full
+PUT googlem8 feeds contacts {userEmail} full {contactId}
+GET googlem8 feeds contacts {userEmail} full
+GET googlem8 feeds contacts {userEmail} full {contactId}
+DELETE googlem8 feeds contacts {userEmail} full {contactId}
+GET googlem8 feeds groups {userEmail} full
+GET  googlem8 feeds {userEmail} full {groupID}
+DELETE googlem8 feeds groups {userEmail} full {groupID}
+GET googlem8 feeds contacts {userEmail} full
+GET googlem8 feeds contacts {userEmail} full {contactId}
+POST googlem8 feeds contacts {userEmail} full
+DELETE googlem8 feeds contacts {userEmail} full {contactId}
+PUT googlem8 feeds contacts {userEmail} full {contactId}
+GET googlem8 feeds groups {userEmail} full
+GET  googlem8 feeds {userEmail} full {groupID}
+DELETE googlem8 feeds groups {userEmail} full {groupID}
+POST adsapitwitter1 accounts {account_id} tailored_audiences
+POST adsapitwitter1 accounts {account_id} tailored_audiences
+POST googleapisgamesv1 achievements {achievementId} increment
+POST googleapisgamesv1 achievements {achievementId} increment
+GET graphfacebookv2.9 {comment-id}
+DELETE graphfacebookv2.9 {comment-id}
+POST graphfacebookv2.9 {comment-id}
+GET graphfacebookv2.9 {comment-id}
+DELETE graphfacebookv2.9 {comment-id}
+POST graphfacebookv2.9 {comment-id}
+POST adsapitwitter1 accounts {account_id} promoted_accounts
+POST adsapitwitter1 accounts {account_id} promoted_accounts
+GET graphfacebookv2.9 {place-id}
+GET graphfacebookv2.9 {place-id}
+GET adsapitwitter1 accounts {account_id} features
+GET adsapitwitter1 accounts {account_id} features
+POST googleapisgamesv1 leaderboards {leaderboardId} scores
+POST googleapisgamesv1 leaderboards {leaderboardId} scores
+GET apitwitter1.1 favorites list.json
+GET apitwitter1.1 favorites list.json
+GET graphfacebookv2.9 {user-id} videos
+GET graphfacebookv2.9 {user-id} videos uploaded
+POST graphvideofacebookv2.9 {page-id} videos
+POST graphvideofacebookv2.9 {user-id} videos
+GET graphfacebookv2.9 {user-id} videos
+POST graphvideofacebookv2.9 {event-id} videos
+GET graphfacebookv2.9 {user-id} videos uploaded
+POST graphvideofacebookv2.9 {page-id} videos
+POST graphvideofacebookv2.9 {user-id} videos
+POST graphvideofacebookv2.9 {event-id} videos
+POST adsapitwitter1 accounts {account_id} app_event_tags
+POST adsapitwitter1 accounts {account_id} app_event_tags
+POST mwsamazonservicesReports{date}
+POST mwsamazonservicesReports{date}
+POST mwsamazonservicesProducts{date}
+POST mwsamazonservicesProducts{date}
+GET graphfacebookv2.9 {user-id} friendlists
+GET graphfacebookv2.9 {user-id} friendlists
+POST mwsamazonservicesSubscriptions2013-07-01
+POST mwsamazonservicesSubscriptions2013-07-01
+DELETE adsapitwitter1 accounts {account_id} features
+DELETE adsapitwitter1 accounts {account_id} features
+GET adsapitwitter1 targeting_criteria behaviors
+GET adsapitwitter1 targeting_criteria behaviors
+DELETE adsapitwitter1 accounts {account_id} app_event_provider_configurations {id}
+DELETE adsapitwitter1 accounts {account_id} app_event_provider_configurations {id}
+GET graphfacebookv2.9 {link-id}
+DELETE graphfacebookv2.9 {link-id}
+GET graphfacebookv2.9 {link-id}
+DELETE graphfacebookv2.9 {link-id}
+POST uploadtwitter1.1 media upload.json
+POST uploadtwitter1.1 media upload.json
+GET graphfacebookv2.9 {page-id}
+GET graphfacebookv2.9 {page-id}
+GET apitwitter1.1 lists list.json
+GET apitwitter1.1 lists list.json
+GET graphfacebookv2.9 {life-event-id} comments
+POST graphfacebookv2.9 {life-event-id} comments
+GET graphfacebookv2.9 {life-event-id} comments
+POST graphfacebookv2.9 {life-event-id} comments
+GET adsapitwitter1 accounts {account_id} line_items {line_item_id}
+GET adsapitwitter1 accounts {account_id} line_items {line_item_id}
+POST POST https:api.admanager.yahoo.comv1 rest campaign
+POST POST https:api.admanager.yahoo.comv1 rest campaign
+GET apiadmanageryahoov1 rest campaign {campaignId}
+PUT apiadmanageryahoov1 rest adgroup
+GET apiadmanageryahoov1 rest campaign {campaignId}
+PUT apiadmanageryahoov1 rest adgroup
+GET graphfacebookv2.9 {application-id} custom_audience_third_party_id
+GET graphfacebookv2.9 {application-id} custom_audience_third_party_id
+GET adsapitwitter1 accounts {account_id} cards video_app_download {id}
+GET adsapitwitter1 accounts {account_id} cards video_app_download {id}
+GET graphfacebookv2.9 {open-graph-context-id} friends_tagged_at
+GET graphfacebookv2.9 {open-graph-context-id} friends_tagged_at
+GET graphfacebookv2.9 {page-id}
+GET graphfacebookv2.9 {page-id}
+POST apitwitter1.1 lists members destroy_all.json
+POST apitwitter1.1 lists members destroy_all.json
+GET graphfacebookv2.9 {user-id} friends
+GET graphfacebookv2.9 {user-id} friends
+GET apitwitter1.1 users suggestions.json
+GET apitwitter1.1 users suggestions.json
+GET graphfacebookv2.9 {life-event-id} photos
+GET graphfacebookv2.9 {life-event-id} photos
+GET graphfacebookv2.9 {album-id} picture
+GET graphfacebookv2.9 {album-id} picture
+DELETE adsapitwitter1 accounts {account_id} tailored_audiences {tailored_audience_id} permissions {tailored_audience_permission_id}
+DELETE adsapitwitter1 accounts {account_id} tailored_audiences {tailored_audience_id} permissions {tailored_audience_permission_id}
+GET streamtwitter1.1 statuses sample.json
+GET streamtwitter1.1 statuses sample.json
+POST apitwitter1.1 users report_spam.json
+POST apitwitter1.1 users report_spam.json
+POST googleapisgamesv1management achievements reset
+POST googleapisgamesv1management achievements reset
+POST apitwitter1.1 lists subscribers destroy.json
+POST apitwitter1.1 lists subscribers destroy.json
+GET graphfacebookv2.9 {page-id} screennames
+GET graphfacebookv2.9 {page-id} screennames
+GET graphfacebookv2.9 {page-id} milestones
+GET graphfacebookv2.9 {page-id} milestones
+GET graphfacebookv2.9 {user-id}
+GET graphfacebookv2.9 {user-id}
+PUT adsapitwitter1 accounts {account_id} promoted_tweets {id}
+PUT adsapitwitter1 accounts {account_id} promoted_tweets {id}
+POST apitwitter1.1 lists update.json
+POST apitwitter1.1 lists update.json
+GET googleapisgamesv1configuration achievements {achievementId}
+GET googleapisgamesv1configuration achievements {achievementId}
+https:  api.twitter.com 1.1 statuses retweets_of_me.json GET
+https:  api.twitter.com 1.1 statuses retweets_of_me.json GET
+PUT adsapitwitter1 accounts {account_id} funding_instruments {id}
+PUT adsapitwitter1 accounts {account_id} funding_instruments {id}
+GET apitwitter1.1 statuses retweeters ids.json
+GET apitwitter1.1 statuses retweeters ids.json
+GET apitwitter1.1 statuses home_timeline.json
+GET apitwitter1.1 statuses home_timeline.json
+Get apitwitter1.1 followers ids.json
+Get apitwitter1.1 followers ids.json
+GET graphfacebookv2.9 {user-id}
+GET graphfacebookv2.9 {user-id}
+GET graphfacebookv2.9 {app-id} accounts test-users
+GET graphfacebookv2.9 {app-id} accounts test-users
+GET googleapisdiscoveryv1 apis {api} {version} rest
+GET googleapisdiscoveryv1 apis {api} {version} rest
+GET apitwitter1.1 blocks ids.json
+GET apitwitter1.1 blocks ids.json
+GET adsapitwitter1 accounts {account_id} cards image_conversation
+GET adsapitwitter1 accounts {account_id} cards image_conversation
+GET graphfacebookv2.6 {video-id} video_insights
+GET graphfacebookv2.6 {video-id} video_insights
+GET graphfacebookv2.9 {page-id} videos
+GET graphfacebookv2.9 {page-id} videos
+POST adsapisandboxtwitter1 accounts {account_id} funding_instruments
+POST adsapisandboxtwitter1 accounts {account_id} funding_instruments
+GET adsapitwitter1 accounts {account_id} campaigns
+GET adsapitwitter1 accounts {account_id} campaigns
+GET graphfacebookv2.9 {message-id}
+GET graphfacebookv2.9 {message-id}
+GET graphfacebookv2.9 {message_id} attachments
+GET graphfacebookv2.9 {message_id} attachments
+GET graphfacebookv2.9 {message_id} attachments
+GET graphfacebookv2.9 {message_id} attachments
+GET graphfacebookv2.9 {message_id} attachments
+GET graphfacebookv2.9 {message_id} attachments

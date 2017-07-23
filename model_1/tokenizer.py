@@ -1,8 +1,9 @@
 import math
 import pandas as pd
 import numpy as np
-from functools import partial
+from operator import methodcaller
 from collections import OrderedDict
+from pprint import pprint
 
 
 class Tokenizer:
@@ -71,38 +72,42 @@ class Tokenizer:
     def batch(self, batch_size, tensor_X_name, tensor_Y_name):
         max_batches = int(math.ceil(len(self._dataset)/batch_size))
 
+        stop = self._vocab['</s>']
+
         def convert(data, batch_size, index):
-            stop = self._vocab['</s>']
 
             def make_subset(data):
                 return list(
                     map(
-                        partial(str.split, ' '),
+                        methodcaller('split', ' '),
                         data[(index-1)*batch_size:index*(batch_size)]
                     )
                 )
             subset_X = make_subset(data['from'])
             subset_Y = make_subset(data['to'])
-            max_len = max(max(map(len, subset_X)), max(map(len, subset_Y)))
+            max_X_len = max(map(len, subset_X))
+            max_Y_len = max(map(len, subset_Y))
 
-            def process(data):
+            def process(data, max_len):
                 def pad(seq):
-                    mapped_seq = [self._vocab.get(y, 54) for y in seq]
-                    return mapped_seq + [stop*(max_len-len(mapped_seq))]
+                    mapped_seq = [self._vocab.get(y, 54) for y in seq] + [stop]
+                    padding = [stop for _ in range(max_len+1-len(mapped_seq))]
+                    return mapped_seq + padding
 
                 return list(map(pad, data))
 
-            return process(subset_X), process(subset_Y)
+            return process(subset_X, max_X_len), process(subset_Y, max_Y_len)
 
         for x in range(1, max_batches):
             x_seq, y_seq = convert(self._dataset, batch_size, x)
             yield {
-                tensor_X_name: x_seq,
-                tensor_Y_name: y_seq
+                tensor_X_name: y_seq,
+                tensor_Y_name: x_seq
             }
 
     def log_formatter(self, keys):
         def to_str(sequence):
+            print(type(self._reverse_vocab))
             tokens = [
                 self._reverse_vocab.get(x, "<unk>") for x in sequence
             ]

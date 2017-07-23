@@ -77,6 +77,7 @@ class Seq2Seq:
         self,
         t_out,
         p_out,
+        mode,
         outputs,
         optimizer,
         learning_rate,
@@ -86,20 +87,24 @@ class Seq2Seq:
     ):
         tf.identity(t_out.sample_id[0], name='training_predictions')
         weights = tf.Variable(
-            tf.random_normal([batch_size, 10], dtype=tf.float32),
+            tf.random_normal([batch_size, 7], dtype=tf.float32),
             trainable=True,
         )
+        start_tokens = tf.zeros([batch_size], dtype=tf.int64)
+        outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1)
+
         loss = tf.contrib.seq2seq.sequence_loss(
                 t_out.rnn_output, outputs, weights=weights)
         train_op = layers.optimize_loss(
                 loss, tf.train.get_global_step(),
-                optimizer=lambda lr: tf.train.MomentumOptimizer(lr, momentum=0.3),
+                optimizer='Adam',
                 learning_rate=learning_rate,
                 summaries=['loss', 'learning_rate'])
 
         tf.identity(p_out.predicted_ids[0], name='predictions')
+        print('HERERerererererererrerE')
         return tf.estimator.EstimatorSpec(
-            mode=tf.estimator.ModeKeys.TRAIN,
+            mode=mode,
             predictions=p_out.predicted_ids,
             loss=loss,
             train_op=train_op
@@ -120,14 +125,13 @@ class Seq2Seq:
         )
 
     def decode(self, **kwargs):
-        with tf.variable_scope('Decode') as decoding_scope:
-            decoder_cell = self._build_decoder_cell(
-                kwargs['num_units'], kwargs['keep_prob'], kwargs['num_layers']
-            )
-            train_params, predict_params = self._build_param_lists(kwargs)
-            t_out, t_state, t_lengths = self._decode_train(cell=decoder_cell, **train_params)
-            p_out, p_state = self._decode(cell=decoder_cell, **predict_params)
-            return (t_out, t_state, p_out, p_state)
+        decoder_cell = self._build_decoder_cell(
+            kwargs['num_units'], kwargs['keep_prob'], kwargs['num_layers']
+        )
+        train_params, predict_params = self._build_param_lists(kwargs)
+        t_out = self._decode_train(cell=decoder_cell, **train_params)
+        p_out = self._decode(cell=decoder_cell, **predict_params)
+        return t_out[0], p_out[0]
 
     def _build_attention(
         self, cell,
@@ -154,32 +158,33 @@ class Seq2Seq:
         outputs_lengths, batch_size, vocab_size,
         sampling_prob=0.5, att_multiplier=0.5
     ):
-        attention = self._build_attention(
-            cell, encoder_outputs, memory_sequence_length, num_units, att_multiplier
-        )
-        helper = ScheduledEmbeddingTrainingHelper(
-            inputs=outputs_embedding,
-            embedding=embedding_matrix,
-            sequence_length=outputs_lengths,
-            sampling_probability=tf.constant(
-                sampling_prob,
-                dtype=tf.float32,
-                name='scheduled_sampling_probability'
-            ),
-            name='scheduled_sampling_helper'
-        )
-        output_proj = tf.contrib.rnn.OutputProjectionWrapper(
-            attention, vocab_size, reuse=False
-        )
-        basic_decoder = BasicDecoder(
-            cell=output_proj,
-            helper=helper,
-            initial_state=output_proj.zero_state(
-                batch_size=batch_size,
-                dtype=tf.float32
-            ).clone(cell_state=encoder_state[0]),
-        )
-        return dynamic_decode(decoder=basic_decoder)
+        with tf.variable_scope('Decode', reuse=None):
+            attention = self._build_attention(
+                cell, encoder_outputs, memory_sequence_length, num_units, att_multiplier
+            )
+            helper = ScheduledEmbeddingTrainingHelper(
+                inputs=outputs_embedding,
+                embedding=embedding_matrix,
+                sequence_length=outputs_lengths,
+                sampling_probability=tf.constant(
+                    sampling_prob,
+                    dtype=tf.float32,
+                    name='scheduled_sampling_probability'
+                ),
+                name='scheduled_sampling_helper'
+            )
+            output_proj = tf.contrib.rnn.OutputProjectionWrapper(
+                attention, vocab_size, reuse=None
+            )
+            basic_decoder = BasicDecoder(
+                cell=output_proj,
+                helper=helper,
+                initial_state=output_proj.zero_state(
+                    batch_size=batch_size,
+                    dtype=tf.float32
+                ),
+            )
+            return dynamic_decode(decoder=basic_decoder, output_time_major=False, impute_finished=True)
 
     def _decode(
         self,
@@ -190,25 +195,25 @@ class Seq2Seq:
         batch_size,
         length_penalty=0.0, att_multiplier=0.5
     ):
-        tiled_outputs = tf.contrib.seq2seq.tile_batch(encoder_outputs, width, 'tiled_batch')
-        tiled_lengths = tf.contrib.seq2seq.tile_batch(memory_sequence_length, width, 'tiled_lengths')
-        attention = self._build_attention(
-            cell, tiled_outputs, tiled_lengths, num_units, att_multiplier
-        )
-        output_proj = tf.contrib.rnn.OutputProjectionWrapper(
-            attention, vocab_size, reuse=None
-        )
-        beam = BeamSearchDecoder(
-            output_proj,
-            embedding_matrix,
-            start_tokens,
-            end_token,
-            beam_width=width,
-            length_penalty_weight=length_penalty,
-            initial_state=output_proj.zero_state(
-                batch_size=batch_size*width,
-                dtype=tf.float32
+        with tf.variable_scope('Decode', reuse=True):
+            tiled_outputs = tf.contrib.seq2seq.tile_batch(encoder_outputs, width, 'tiled_batch')
+            tiled_lengths = tf.contrib.seq2seq.tile_batch(memory_sequence_length, width, 'tiled_lengths')
+            attention = self._build_attention(
+                cell, tiled_outputs, tiled_lengths, num_units, att_multiplier
             )
-        )
-        dec_outputs, dec_state, dec_lengths = dynamic_decode(decoder=beam)
-        return dec_outputs, dec_state
+            output_proj = tf.contrib.rnn.OutputProjectionWrapper(
+                attention, vocab_size, reuse=True
+            )
+            beam = BeamSearchDecoder(
+                output_proj,
+                embedding_matrix,
+                tf.to_int32(start_tokens),
+                end_token,
+                beam_width=width,
+                length_penalty_weight=length_penalty,
+                initial_state=output_proj.zero_state(
+                    batch_size=batch_size*width,
+                    dtype=tf.float32
+                )
+            )
+            return dynamic_decode(decoder=beam, output_time_major=False)
