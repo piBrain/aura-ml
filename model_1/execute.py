@@ -16,16 +16,16 @@ VOCAB_SIZE = len(VOCAB)
 REVERSE_VOCAB = tokenizer.reverse_vocab()
 EMBEDDING = tokenizer.embedding_matrix()
 ENCODE_PARAMS = {
-    'num_units': 156,
-    'num_layers': 3,
+    'num_units': 30,
+    'num_layers': 10,
     'peepholes': True,
     'keep_probability': 0.5,
     'sequence_length': 10,
     'time_major': False
 }
 DECODE_PARAMS = {
-    'num_units': 156,
-    'num_layers': 3,
+    'num_units': 30,
+    'num_layers': 10,
     'attention_depth': 5,
     'attention_size': 5,
     'attention_multiplier': 0.5,
@@ -40,7 +40,7 @@ TRAIN_PARAMS = {
     'optimizer': 'Momentum',
     'learning_rate': 0.1,
     'summaries': ['loss', 'learning_rate'],
-    'batch_size': 5,
+    'batch_size': 10,
     'data_names': ['input:0', 'output:0'],
     'vocab_size': VOCAB_SIZE,
     'embed_dim': 300

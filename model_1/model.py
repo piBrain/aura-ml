@@ -23,10 +23,10 @@ class Seq2Seq:
     ):
         multi_cell = MultiRNNCell(
             [
-                self._cell_factory(num_units, peepholes, keep_prob)
-                for x in range(num_layers)
+               self._cell_factory(num_units, peepholes, keep_prob) for x in range(num_layers)
             ]
         )
+        # multi_cell = self._cell_factory(num_units, peepholes, keep_prob)
         # What is the potential benefit of using out_fw over out_bw
         # or the concatentation of the two
         enc_outputs, enc_state = tf.nn.bidirectional_dynamic_rnn(
@@ -87,7 +87,7 @@ class Seq2Seq:
     ):
         tf.identity(t_out.sample_id[0], name='training_predictions')
         weights = tf.Variable(
-            tf.random_normal([batch_size, 7], dtype=tf.float32),
+            tf.random_normal([batch_size, 11], dtype=tf.float32),
             trainable=True,
         )
         start_tokens = tf.zeros([batch_size], dtype=tf.int64)
@@ -102,7 +102,6 @@ class Seq2Seq:
                 summaries=['loss', 'learning_rate'])
 
         tf.identity(p_out.predicted_ids[0], name='predictions')
-        print('HERERerererererererrerE')
         return tf.estimator.EstimatorSpec(
             mode=mode,
             predictions=p_out.predicted_ids,
@@ -117,12 +116,12 @@ class Seq2Seq:
     def _build_decoder_cell(
         self, num_units, keep_prob, num_layers, peepholes=True
     ):
-        return MultiRNNCell(
-            [
-                self._cell_factory(num_units, peepholes, keep_prob)
-                for x in range(num_layers)
-            ]
-        )
+        return self._cell_factory(num_units, peepholes, keep_prob)
+        # return MultiRNNCell(
+        #     [
+        #         for x in range(num_layers)
+        #     ]
+        # )
 
     def decode(self, **kwargs):
         decoder_cell = self._build_decoder_cell(

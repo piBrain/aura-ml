@@ -92,30 +92,46 @@ class Tokenizer:
                 def pad(seq):
                     mapped_seq = [self._vocab.get(y, 54) for y in seq] + [stop]
                     padding = [stop for _ in range(max_len+1-len(mapped_seq))]
-                    return mapped_seq + padding
+                    padded = mapped_seq + padding
+                    if len(padded) < 10:
+                        padded = padded + [stop for _ in range(10-len(padded))]
+                    return padded[:10]
 
                 return list(map(pad, data))
 
             return process(subset_X, max_X_len), process(subset_Y, max_Y_len)
-
-        for x in range(1, max_batches):
-            x_seq, y_seq = convert(self._dataset, batch_size, x)
-            yield {
-                tensor_X_name: y_seq,
-                tensor_Y_name: x_seq
-            }
+        while True:
+            for x in range(1, max_batches):
+                x_seq, y_seq = convert(self._dataset, batch_size, x)
+                yield {
+                    tensor_X_name: y_seq,
+                    tensor_Y_name: x_seq
+                }
 
     def log_formatter(self, keys):
+        def to_str_nested(sequence):
+            translations = []
+            for x in sequence:
+                look_up = []
+                for val in x:
+                    look_up.append(self._reverse_vocab.get(val, "<unk>"))
+                translations.append(' '.join(look_up))
+            return translations
+
         def to_str(sequence):
-            print(type(self._reverse_vocab))
-            tokens = [
-                self._reverse_vocab.get(x, "<unk>") for x in sequence
-            ]
-            return ' '.join(tokens)
+            translation = []
+            for x in sequence:
+                translation.append(self._reverse_vocab.get(x, "<unk>"))
+            return ' '.join(translation)
 
         def format(values):
             res = []
             for key in keys:
-                res.append('{} = {}'.format(key, to_str(values[key])))
+                seq = values[key].tolist()
+                if not isinstance(seq[0], list):
+                    res.append('{} = {}'.format(key, to_str(seq)))
+                else:
+                    for x in to_str_nested(seq):
+                        res.append('{} = {}'.format(key, to_str_nested(seq)))
             return '\n'.join(res)
         return format
