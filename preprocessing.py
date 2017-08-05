@@ -1,10 +1,24 @@
 import csv
 import re
 from urllib.parse import urlsplit
+from collections import OrderedDict
 
 
-SEMANTICALLY_IRRELEVANT_SUFFIXES = ['\.com', '\.io', '\.co\.uk', '\.ai', '\.me']
+SEMANTICALLY_IRRELEVANT_SUFFIXES = ['\.com', '\.io', '\.co\.uk', '\.ai', '\.me', '\.json']
+API_NAMES = {
+        'googleapis': 'google apis',
+        'adsapitwitter': 'ads api twitter',
+        'graphfacebook': 'graph facebook',
+        'scriptgoogleapis': 'script google apis',
+        'graphvideofacebook': 'graph video facebook',
+        'uploadtwitter': 'upload twitter',
+        'apitwitter': 'api twitter',
+        'apiadmanageryahoo': 'api ad manager yahoo',
+        'mwsamazonservices': 'amazon services',
+        'adsapisandboxtwitter': 'ads api sandbox twitter'
+}
 
+API_NAMES = OrderedDict(sorted(API_NAMES.items(), key=lambda t: t[0]))
 
 def read_to_dict_array(file_name):
     results = []
@@ -23,39 +37,65 @@ def find_version_end_position(path):
         return -1
     return match.end()
 
+def strip_version(string):
+    return re.sub(
+        r'v?\d{1,3}',
+        '',
+        string
+    )
+
+def replace_api_names(string):
+    for k,v in API_NAMES.items():
+        string = string.replace(k, v)
+    return string
+
+def strip_chars(string):
+    formatted_string = (
+        re.sub(
+            re.compile('|'.join(SEMANTICALLY_IRRELEVANT_SUFFIXES)),
+            '',
+            string
+        )
+    )
+    formatted_string = (
+        re.sub(
+            r'[_\{\}\(\)<>\[\]\\\.\-\",\?\'\|]*',
+            '',
+            formatted_string
+        )
+    )
+    return formatted_string
+
+def strip_protocol(string):
+    return re.sub(r'https:/{0,2}', '', string)
 
 def format_request(request_example, method):
     if not re.match(r'http(s?)\:', request_example):
         request_example = 'https://' + request_example
     split_url = urlsplit(request_example)
     formatted_netloc = split_url.netloc.replace('www.', '')
-    path = split_url.path
-    version_end_pos = find_version_end_position(path)
-    name_portion = ''.join(path[:version_end_pos])
-    param_portion = ''.join(path[version_end_pos:])
-    formatted_netloc = (
-        re.sub(
-            re.compile('|'.join(SEMANTICALLY_IRRELEVANT_SUFFIXES)),
-            '',
-            formatted_netloc
-        )
-    ).replace('.', '').replace('-', '')
-    name = (formatted_netloc+name_portion).replace('/', '')
+    clean_path = strip_chars(split_url.path)
+    version_end_pos = find_version_end_position(clean_path)
+    name_portion = (clean_path[:version_end_pos])
+    param_portion = (clean_path[version_end_pos:])
+    name = (strip_chars(formatted_netloc)+name_portion).replace('/', ' ')
     formatted_request_example = (
         ''.join([method, ' ', name, param_portion])
     )
-    return formatted_request_example.replace('/', ' ')
+    no_version = strip_version(formatted_request_example.replace('/', ' '))
+    proper_spaced = replace_api_names(no_version).replace('  ', ' ')
+    return strip_protocol(proper_spaced)
 
 
 def main():
     def format_data(example):
-        example['from'] = (
+        example['to'] = (
             format_request(
                 example['request_example'],
                 example['method']
-            )
+            ).lower()
         )
-        example['to'] = example['english_example'].lower()
+        example['from'] = strip_chars(example['english_example'].lower())
         return example
     with open('processed_dataset.csv', 'w+', newline='') as f:
         writer = (

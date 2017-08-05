@@ -4,6 +4,7 @@ from model import Seq2Seq
 from tokenizer import Tokenizer
 from pprint import pprint
 import pandas as pd
+from tensorflow.python import debug as tf_debug
 
 DATASET_PATH = './processed_dataset.csv'
 EMBEDDING_PATH = './wiki.simple.vec'
@@ -19,7 +20,7 @@ ENCODE_PARAMS = {
     'num_units': 30,
     'num_layers': 10,
     'peepholes': True,
-    'keep_probability': 0.5,
+    'keep_probability': 0.7,
     'sequence_length': 10,
     'time_major': False
 }
@@ -29,16 +30,16 @@ DECODE_PARAMS = {
     'attention_depth': 5,
     'attention_size': 5,
     'attention_multiplier': 0.5,
-    'sampling_probability': 0.5,
+    'sampling_probability': 0.7,
     'end_token': VOCAB['</s>'],
-    'beam_width': 5,
+    'beam_width': 7,
     'length_penalty': 0.0,
     'keep_probability': 0.5,
     'reuse': True
 }
 TRAIN_PARAMS = {
     'optimizer': 'Momentum',
-    'learning_rate': 0.1,
+    'learning_rate': 0.333,
     'summaries': ['loss', 'learning_rate'],
     'batch_size': 10,
     'data_names': ['input:0', 'output:0'],
@@ -51,7 +52,7 @@ PARAMS = {
     'train': TRAIN_PARAMS
 }
 
-MODEL_DIR = './saves'
+MODEL_DIR = '../saves'
 
 
 def main():
@@ -63,8 +64,8 @@ def main():
     )
 
     def input_fn():
-        inputs = tf.placeholder(tf.int64, shape=[None, None], name='input')
-        outputs = tf.placeholder(tf.int64, shape=[None, None], name='output')
+        inputs = tf.placeholder(tf.int64, shape=[PARAMS['train']['batch_size'], None], name='input')
+        outputs = tf.placeholder(tf.int64, shape=[PARAMS['train']['batch_size'], None], name='output')
         tf.identity(inputs[0], 'input_0')
         tf.identity(outputs[0], 'output_0')
         return {
@@ -74,12 +75,12 @@ def main():
 
     print_inputs = tf.train.LoggingTensorHook(
         ['input_0', 'output_0'],
-        every_n_iter=100,
+        every_n_iter=200,
         formatter=tokenizer.log_formatter(['input_0', 'output_0'])
     )
 
     print_predictions = tf.train.LoggingTensorHook(
-        ['predictions', 'training_predictions'], every_n_iter=100,
+        ['predictions', 'training_predictions'], every_n_iter=1000,
         formatter=tokenizer.log_formatter(
             ['predictions', 'training_predictions']
         )
@@ -93,7 +94,7 @@ def main():
 
     def feed():
         return next(feed_function)
-
+# , tf_debug.LocalCLIDebugHook()
     estimator.train(
         input_fn=input_fn,
         hooks=[tf.train.FeedFnHook(feed), print_inputs, print_predictions],
@@ -106,15 +107,16 @@ def model_wrapper(features, labels, mode, params=None, config=None):
     inputs = features['input']
     outputs = features['output']
     batch_size = tf.shape(inputs)[0]
-    start_tokens = tf.zeros([batch_size], dtype=tf.int64)
-    training_outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1)
-
-    input_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(inputs, VOCAB_SIZE+1)), 1)
-    output_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(training_outputs, VOCAB_SIZE+1)), 1)
+    start_tokens = tf.zeros([batch_size], dtype=tf.int64, name='start_tokens')
+    training_outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1, name='training_outputs')
+    input_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(inputs, VOCAB_SIZE+1)), 1, name='input_lengths')
+    output_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(training_outputs, VOCAB_SIZE+1)), 1, name='output_lengths')
     inputs_embedding = layers.embed_sequence(
         inputs,
         vocab_size=params['train']['vocab_size'],
         embed_dim=params['train']['embed_dim'],
+        initializer=tf.constant_initializer(EMBEDDING),
+        trainable=True,
         scope='embed',
     )
     outputs_embedding = layers.embed_sequence(
@@ -122,15 +124,11 @@ def model_wrapper(features, labels, mode, params=None, config=None):
         vocab_size=params['train']['vocab_size'],
         embed_dim=params['train']['embed_dim'],
         scope='embed',
-        reuse=True
+        trainable=True,
+        reuse=True,
     )
     with tf.variable_scope('embed', reuse=True):
-        embeddings = tf.get_variable(
-            'embeddings',
-            EMBEDDING.shape,
-            initializer=tf.constant_initializer(EMBEDDING),
-            dtype=tf.float32
-        )
+        embeddings = tf.get_variable('embeddings')
     encoder_outputs, encoder_state = model.encode(
         num_units=params['encode']['num_units'],
         peepholes=params['encode']['peepholes'],

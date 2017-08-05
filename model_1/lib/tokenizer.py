@@ -14,6 +14,7 @@ class Tokenizer:
         self._build_vocab()
         self._build_reverse_vocab()
         self._build_embedding_matrix()
+        self.unk = self._vocab['</unk>']
 
     def _build_vocab(self):
         def build(word_units):
@@ -90,7 +91,7 @@ class Tokenizer:
 
             def process(data, max_len):
                 def pad(seq):
-                    mapped_seq = [self._vocab.get(y, 54) for y in seq] + [stop]
+                    mapped_seq = [self._vocab.get(y, self.unk) for y in seq] + [stop]
                     padding = [stop for _ in range(max_len+1-len(mapped_seq))]
                     padded = mapped_seq + padding
                     if len(padded) < 10:
@@ -104,8 +105,8 @@ class Tokenizer:
             for x in range(1, max_batches):
                 x_seq, y_seq = convert(self._dataset, batch_size, x)
                 yield {
-                    tensor_X_name: y_seq,
-                    tensor_Y_name: x_seq
+                    tensor_X_name: x_seq,
+                    tensor_Y_name: y_seq
                 }
 
     def log_formatter(self, keys):
@@ -114,14 +115,14 @@ class Tokenizer:
             for x in sequence:
                 look_up = []
                 for val in x:
-                    look_up.append(self._reverse_vocab.get(val, "<unk>"))
+                    look_up.append(self._reverse_vocab.get(val, "</unk>"))
                 translations.append(' '.join(look_up))
             return translations
 
         def to_str(sequence):
             translation = []
             for x in sequence:
-                translation.append(self._reverse_vocab.get(x, "<unk>"))
+                translation.append(self._reverse_vocab.get(x, "</unk>"))
             return ' '.join(translation)
 
         def format(values):

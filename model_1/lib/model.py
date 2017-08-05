@@ -21,12 +21,12 @@ class Seq2Seq:
         num_layers, seq_len, time_major,
         keep_prob=0.5
     ):
-        multi_cell = MultiRNNCell(
-            [
-               self._cell_factory(num_units, peepholes, keep_prob) for x in range(num_layers)
-            ]
-        )
-        # multi_cell = self._cell_factory(num_units, peepholes, keep_prob)
+        # multi_cell = MultiRNNCell(
+        #     [
+        #        self._cell_factory(num_units, peepholes, keep_prob) for x in range(num_layers)
+        #     ]
+        # )
+        multi_cell = self._cell_factory(num_units, peepholes, keep_prob)
         # What is the potential benefit of using out_fw over out_bw
         # or the concatentation of the two
         enc_outputs, enc_state = tf.nn.bidirectional_dynamic_rnn(
@@ -116,12 +116,12 @@ class Seq2Seq:
     def _build_decoder_cell(
         self, num_units, keep_prob, num_layers, peepholes=True
     ):
-        return self._cell_factory(num_units, peepholes, keep_prob)
-        # return MultiRNNCell(
-        #     [
-        #         for x in range(num_layers)
-        #     ]
-        # )
+        # return self._cell_factory(num_units, peepholes, keep_prob)
+        return MultiRNNCell(
+            [
+               self._cell_factory(num_units, peepholes, keep_prob) for x in range(num_layers)
+            ]
+        )
 
     def decode(self, **kwargs):
         decoder_cell = self._build_decoder_cell(
