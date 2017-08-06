@@ -86,10 +86,7 @@ class Seq2Seq:
         sequence_length
     ):
         tf.identity(t_out.sample_id[0], name='training_predictions')
-        weights = tf.Variable(
-            tf.random_normal([batch_size, 11], dtype=tf.float32),
-            trainable=True,
-        )
+        weights = tf.random_normal([batch_size, 11], dtype=tf.float32)
         start_tokens = tf.zeros([batch_size], dtype=tf.int64)
         outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1)
 

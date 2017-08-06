@@ -26,7 +26,7 @@ ENCODE_PARAMS = {
 }
 DECODE_PARAMS = {
     'num_units': 30,
-    'num_layers': 10,
+    'num_layers': 3,
     'attention_depth': 5,
     'attention_size': 5,
     'attention_multiplier': 0.5,
@@ -64,18 +64,15 @@ def main():
     )
 
     def input_fn():
-        inputs = tf.placeholder(tf.int64, shape=[PARAMS['train']['batch_size'], None], name='input')
-        outputs = tf.placeholder(tf.int64, shape=[PARAMS['train']['batch_size'], None], name='output')
+        inputs = tf.placeholder(tf.int64, shape=[PARAMS['train']['batch_size'], 10], name='input')
+        outputs = tf.placeholder(tf.int64, shape=[PARAMS['train']['batch_size'], 10], name='output')
         tf.identity(inputs[0], 'input_0')
         tf.identity(outputs[0], 'output_0')
-        return {
-            'input': inputs,
-            'output': outputs,
-        }, None
+        return inputs, outputs
 
     print_inputs = tf.train.LoggingTensorHook(
         ['input_0', 'output_0'],
-        every_n_iter=200,
+        every_n_iter=1,
         formatter=tokenizer.log_formatter(['input_0', 'output_0'])
     )
 
@@ -98,25 +95,24 @@ def main():
     estimator.train(
         input_fn=input_fn,
         hooks=[tf.train.FeedFnHook(feed), print_inputs, print_predictions],
-        steps=10000
+        max_steps=20000
     )
 
 
 def model_wrapper(features, labels, mode, params=None, config=None):
     model = Seq2Seq()
-    inputs = features['input']
-    outputs = features['output']
+    inputs = features
+    outputs = labels
     batch_size = tf.shape(inputs)[0]
     start_tokens = tf.zeros([batch_size], dtype=tf.int64, name='start_tokens')
     training_outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1, name='training_outputs')
-    input_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(inputs, VOCAB_SIZE+1)), 1, name='input_lengths')
-    output_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(training_outputs, VOCAB_SIZE+1)), 1, name='output_lengths')
+    input_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(inputs, VOCAB_SIZE)), 1, name='input_lengths')
+    output_lengths = tf.reduce_sum(tf.to_int32(tf.not_equal(training_outputs, VOCAB_SIZE)), 1, name='output_lengths')
     inputs_embedding = layers.embed_sequence(
         inputs,
         vocab_size=params['train']['vocab_size'],
         embed_dim=params['train']['embed_dim'],
         initializer=tf.constant_initializer(EMBEDDING),
-        trainable=True,
         scope='embed',
     )
     outputs_embedding = layers.embed_sequence(
@@ -124,7 +120,6 @@ def model_wrapper(features, labels, mode, params=None, config=None):
         vocab_size=params['train']['vocab_size'],
         embed_dim=params['train']['embed_dim'],
         scope='embed',
-        trainable=True,
         reuse=True,
     )
     with tf.variable_scope('embed', reuse=True):
