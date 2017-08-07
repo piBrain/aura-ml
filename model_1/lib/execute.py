@@ -18,7 +18,7 @@ REVERSE_VOCAB = tokenizer.reverse_vocab()
 EMBEDDING = tokenizer.embedding_matrix()
 ENCODE_PARAMS = {
     'num_units': 30,
-    'num_layers': 10,
+    'num_layers': 3,
     'peepholes': True,
     'keep_probability': 0.7,
     'sequence_length': 10,
@@ -26,22 +26,22 @@ ENCODE_PARAMS = {
 }
 DECODE_PARAMS = {
     'num_units': 30,
-    'num_layers': 3,
-    'attention_depth': 5,
-    'attention_size': 5,
+    'num_layers': 6,
+    'attention_depth': 6,
+    'attention_size': 6,
     'attention_multiplier': 0.5,
     'sampling_probability': 0.7,
     'end_token': VOCAB['</s>'],
-    'beam_width': 7,
+    'beam_width': 12,
     'length_penalty': 0.0,
-    'keep_probability': 0.5,
+    'keep_probability': 0.7,
     'reuse': True
 }
 TRAIN_PARAMS = {
     'optimizer': 'Momentum',
     'learning_rate': 0.333,
     'summaries': ['loss', 'learning_rate'],
-    'batch_size': 10,
+    'batch_size': 20,
     'data_names': ['input:0', 'output:0'],
     'vocab_size': VOCAB_SIZE,
     'embed_dim': 300
@@ -70,18 +70,18 @@ def main():
         tf.identity(outputs[0], 'output_0')
         return inputs, outputs
 
-    print_inputs = tf.train.LoggingTensorHook(
-        ['input_0', 'output_0'],
-        every_n_iter=1,
-        formatter=tokenizer.log_formatter(['input_0', 'output_0'])
-    )
+    # print_inputs = tf.train.LoggingTensorHook(
+    #     ['input_0', 'output_0'],
+    #     every_n_iter=1,
+    #     formatter=tokenizer.log_formatter(['input_0', 'output_0'])
+    # )
 
-    print_predictions = tf.train.LoggingTensorHook(
-        ['predictions', 'training_predictions'], every_n_iter=1000,
-        formatter=tokenizer.log_formatter(
-            ['predictions', 'training_predictions']
-        )
-    )
+    # print_predictions = tf.train.LoggingTensorHook(
+    #     ['predictions', 'training_predictions'], every_n_iter=1000,
+    #     formatter=tokenizer.log_formatter(
+    #         ['predictions', 'training_predictions']
+    #     )
+    # )
 
     feed_function = tokenizer.batch(
         PARAMS['train']['batch_size'],
@@ -94,8 +94,8 @@ def main():
 # , tf_debug.LocalCLIDebugHook()
     estimator.train(
         input_fn=input_fn,
-        hooks=[tf.train.FeedFnHook(feed), print_inputs, print_predictions],
-        max_steps=20000
+        hooks=[tf.train.FeedFnHook(feed)],
+        steps=10000
     )
 
 
@@ -113,12 +113,14 @@ def model_wrapper(features, labels, mode, params=None, config=None):
         vocab_size=params['train']['vocab_size'],
         embed_dim=params['train']['embed_dim'],
         initializer=tf.constant_initializer(EMBEDDING),
+        trainable=True,
         scope='embed',
     )
     outputs_embedding = layers.embed_sequence(
         training_outputs,
         vocab_size=params['train']['vocab_size'],
         embed_dim=params['train']['embed_dim'],
+        trainable=True,
         scope='embed',
         reuse=True,
     )

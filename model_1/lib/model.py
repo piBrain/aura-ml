@@ -21,12 +21,12 @@ class Seq2Seq:
         num_layers, seq_len, time_major,
         keep_prob=0.5
     ):
-        # multi_cell = MultiRNNCell(
-        #     [
-        #        self._cell_factory(num_units, peepholes, keep_prob) for x in range(num_layers)
-        #     ]
-        # )
-        multi_cell = self._cell_factory(num_units, peepholes, keep_prob)
+        multi_cell = MultiRNNCell(
+            [
+               self._cell_factory(num_units, peepholes, keep_prob) for x in range(num_layers)
+            ]
+        )
+        # multi_cell = self._cell_factory(num_units, peepholes, keep_prob)
         # What is the potential benefit of using out_fw over out_bw
         # or the concatentation of the two
         enc_outputs, enc_state = tf.nn.bidirectional_dynamic_rnn(
@@ -86,7 +86,11 @@ class Seq2Seq:
         sequence_length
     ):
         tf.identity(t_out.sample_id[0], name='training_predictions')
-        weights = tf.random_normal([batch_size, 11], dtype=tf.float32)
+        weights = tf.Variable(
+           initial_value=tf.random_normal([batch_size, 11], dtype=tf.float32),
+           dtype=tf.float32,
+           trainable=True
+        )
         start_tokens = tf.zeros([batch_size], dtype=tf.int64)
         outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1)
 
