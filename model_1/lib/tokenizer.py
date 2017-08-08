@@ -72,7 +72,7 @@ class Tokenizer:
 
     def batch(self, batch_size, tensor_X_name, tensor_Y_name):
         max_batches = int(math.ceil(len(self._dataset)/batch_size))
-
+        start = self._vocab['</st>']
         stop = self._vocab['</s>']
 
         def convert(data, batch_size, index):
@@ -91,12 +91,12 @@ class Tokenizer:
 
             def process(data, max_len):
                 def pad(seq):
-                    mapped_seq = [self._vocab.get(y, self.unk) for y in seq] + [stop]
+                    mapped_seq = [start] + [self._vocab.get(y, self.unk) for y in seq] + [stop]
                     padding = [stop for _ in range(max_len+1-len(mapped_seq))]
                     padded = mapped_seq + padding
-                    if len(padded) < 10:
-                        padded = padded + [stop for _ in range(10-len(padded))]
-                    return padded[:10]
+                    if len(padded) < 20:
+                        padded = padded + [stop for _ in range(20-len(padded))]
+                    return padded[:20]
 
                 return list(map(pad, data))
 

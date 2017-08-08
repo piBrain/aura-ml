@@ -87,15 +87,17 @@ class Seq2Seq:
     ):
         tf.identity(t_out.sample_id[0], name='training_predictions')
         weights = tf.Variable(
-           initial_value=tf.random_normal([batch_size, 11], dtype=tf.float32),
+           initial_value=tf.random_normal([batch_size, int(sequence_length)], dtype=tf.float32),
            dtype=tf.float32,
            trainable=True
         )
-        start_tokens = tf.zeros([batch_size], dtype=tf.int64)
-        outputs = tf.concat([tf.expand_dims(start_tokens, 1), outputs], 1)
-
         loss = tf.contrib.seq2seq.sequence_loss(
-                t_out.rnn_output, outputs, weights=weights)
+                t_out.rnn_output, 
+                outputs, 
+                weights=weights,
+                average_across_batch=True,
+                average_across_timesteps=True
+        )
         train_op = layers.optimize_loss(
                 loss, tf.train.get_global_step(),
                 optimizer='Adam',
