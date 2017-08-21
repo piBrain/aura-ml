@@ -109,6 +109,42 @@ class Tokenizer:
                     tensor_Y_name: y_seq
                 }
 
+    def predict_batch(self, batch_size, tensor_X_name):
+        max_batches = int(math.ceil(len(self._dataset)/batch_size))
+        start = self._vocab['</st>']
+        stop = self._vocab['</s>']
+
+        def convert(data, batch_size, index):
+
+            def make_subset(data):
+                return list(
+                    map(
+                        methodcaller('split', ' '),
+                        data[(index-1)*batch_size:index*(batch_size)]
+                    )
+                )
+            subset_X = make_subset(data['from'])
+            max_X_len = max(map(len, subset_X))
+
+            def process(data, max_len):
+                def pad(seq):
+                    mapped_seq = [start] + [self._vocab.get(y, self.unk) for y in seq] + [stop]
+                    padding = [stop for _ in range(max_len+1-len(mapped_seq))]
+                    padded = mapped_seq + padding
+                    if len(padded) < 20:
+                        padded = padded + [stop for _ in range(20-len(padded))]
+                    return padded[:20]
+
+                return list(map(pad, data))
+
+            return process(subset_X, max_X_len)
+        for x in range(1, max_batches):
+            x_seq = convert(self._dataset, batch_size, x)
+            print(x_seq)
+            yield {
+                tensor_X_name: x_seq,
+            }
+
     def log_formatter(self, keys):
         def to_str_nested(sequence):
             translations = []

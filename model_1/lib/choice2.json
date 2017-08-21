@@ -1,0 +1,127 @@
+{
+    "state": 2,
+    "version": 0,
+    "misc": {
+        "vals": {
+            "attml": [
+                0.4094741103810864
+            ],
+            "keep_probability": [
+                0
+            ],
+            "beam_width": [
+                2
+            ],
+            "learning_rate": [
+                0
+            ],
+            "batch_size": [
+                0
+            ],
+            "lr": [
+                0.026940721560136938
+            ],
+            "num_units": [
+                4
+            ],
+            "smp": [
+                0.4730193795206985
+            ],
+            "kpprb": [
+                0.7958558397490962
+            ],
+            "sampling_probability": [
+                0
+            ],
+            "attention_size": [
+                7
+            ],
+            "attention_multiplier": [
+                0
+            ],
+            "num_layers": [
+                2
+            ],
+            "attention_depth": [
+                12
+            ]
+        },
+        "cmd": [
+            "domain_attachment",
+            "FMinIter_Domain"
+        ],
+        "tid": 13,
+        "idxs": {
+            "attml": [
+                13
+            ],
+            "keep_probability": [
+                13
+            ],
+            "beam_width": [
+                13
+            ],
+            "learning_rate": [
+                13
+            ],
+            "batch_size": [
+                13
+            ],
+            "lr": [
+                13
+            ],
+            "num_units": [
+                13
+            ],
+            "smp": [
+                13
+            ],
+            "kpprb": [
+                13
+            ],
+            "sampling_probability": [
+                13
+            ],
+            "attention_size": [
+                13
+            ],
+            "attention_multiplier": [
+                13
+            ],
+            "num_layers": [
+                13
+            ],
+            "attention_depth": [
+                13
+            ]
+        },
+        "workdir": null
+    },
+    "result": {
+        "eval_time": 1502270504.4439244,
+        "status": "ok",
+        "loss": -94511112.0,
+        "params": {
+            "keep_probability": 0.7958558397490962,
+            "num_units": 300,
+            "beam_width": 3,
+            "learning_rate": 0.026940721560136938,
+            "batch_size": 20,
+            "sampling_probability": 0.4730193795206985,
+            "attention_size": 8,
+            "attention_multiplier": 0.4094741103810864,
+            "num_layers": 7,
+            "attention_depth": 15
+        }
+    },
+    "spec": null,
+    "refresh_time": {
+        "$date": 1502270505146
+    },
+    "book_time": {
+        "$date": 1502261202939
+    },
+    "owner": null,
+    "exp_key": null,
+    "tid": 13
+}

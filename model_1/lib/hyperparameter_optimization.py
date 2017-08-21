@@ -51,7 +51,7 @@ def objective(args):
         'vocab_size': VOCAB_SIZE,
         'embed_dim': 300,
         'embedding': EMBEDDING,
-        'num_steps': 10,
+        'num_steps': 10000,
         'sequence_length': 20
     }
     PARAMS = {
@@ -92,7 +92,7 @@ def optimize():
         'batch_size': hyperopt.hp.choice('batch_size', [20])
     }
     trials = hyperopt.Trials()
-    best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=1, trials=trials)
+    best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=100, trials=trials)
 
     def get_loss(param_dict):
         return param_dict['result']['loss']
@@ -104,7 +104,7 @@ def optimize():
     print(hyperopt.space_eval(space, best_model))
     print('--------------------------------------')
     sorted_trials = sorted(trials.trials, key=get_loss)
-    with open('./opt_param_list.bson', 'w') as f:
+    with open('./opt_param_list.json', 'w') as f:
         for trial in sorted_trials:
             json.dump(trial, f, default=json_util.default)
     
