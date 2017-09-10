@@ -1,2 +1,5 @@
 aura_model/*
 ignore/*
+tutorial_model/wiki.simple.vec
+tutorial_model/nltk_data
+tutorial_model/data.tar.gz
