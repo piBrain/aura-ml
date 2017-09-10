@@ -1,0 +1,215 @@
+db_id,to,from
+7,get google apis games players playerid snapshots,from google download a snapshot of my saved game
+8,get google apis games players playerid snapshots,get my saved game from google 
+9,post google apis games pushtokens remove,remove my push token from google games
+10,post google apis games pushtokens remove,from google games delete the push token
+11,post google apis games rooms create,from google make a new game room
+12,post google apis games rooms create,from google games create a room
+13,post google apis games management scores reset,from google games reset all scores
+14,post google apis games management scores reset,reset all my scores on google games
+15,post google apis games achievements achievementid unlock,from google games unlock this achievementid
+16,post google apis games achievements achievementid unlock,unlock this achievementid on google games
+17,get google apis plus comments commentid,from google plus please download this commentid
+18,get google apis plus comments commentid,aura please download this commentid from google plus for me
+19,get google apis games turnbasedmatches,download the list of turnbased matches i was in from google games
+20,get google apis games turnbasedmatches,from google games get the list of turnbased matches i was in
+21,post google apis upload games configuration images resourceid imagetype imagetype,upload this resourceid with imagetype extension to google games
+22,post google apis upload games configuration images resourceid imagetype imagetype,resume the upload to this resourceid of this imagetype to google games with id token
+23,post google apis upload games configuration images resourceid imagetype imagetype,to google games upload this resourceid with imagetype extension
+24,post google apis upload games configuration images resourceid imagetype imagetype,to google games resume the upload with this resourceid of this imagetype with id token
+25,post google apis games management events eventid reset,reset all event progress from this eventid on google games
+26,post google apis games management events eventid reset,on google games reset all progress from this eventid
+27,get google apis plus people userid activities collection,get all the activities of userid in the collection collection from google plus
+28,get google apis plus people userid activities collection,from google plus get my userid list of activities in this collection collection
+29,get google apis games achievements,what are all the achievements from my game on google games
+30,get google apis games achievements,from google games get the list of my achievements
+31,post google apis games configuration applications applicationid achievements,insert new achievement configuration for my app applicationid on google games
+32,post google apis games configuration applications applicationid achievements,aura on google games please insert a new achievement configuration for this applicationid
+33,get google apis games rooms roomid,get all the information from this roomid on google games
+34,get google apis games rooms roomid,from google games please get the information on this roomid for me 
+35,get google apis games leaderboards leaderboardid,get the metadata for this leaderboardid from google games
+36,get google apis games leaderboards leaderboardid,google games grab the metadata for leaderboardid
+37,get google apis plus people userid,get the profile for userid for me from googleplus
+38,get google apis plus people userid,googleplus get the user profile for userid for me
+39,post google apis games achievements achievementid setstepsatleast,increase the number of steps for how close i am to achievementid by numsteps on google games
+40,post google apis games achievements achievementid setstepsatleast,on google games increase the amount of steps by numsteps for achievementid
+41,post google apis games achievements updatemultiple,update all the achievements for my google games
+42,post google apis games achievements updatemultiple,on google games update all the achievements on my account please 
+43,post api twitter mutes users destroy,unmute screenname  userid on twitter for me
+44,post api twitter mutes users destroy,on twitter unmute screenname  userid
+45,post google apis upload games configuration images resourceid imagetype imagetype,upload an image to google games at resourceid with type imagetype
+46,post google apis upload games configuration images resourceid imagetype imagetype,to google games upload to this resource resourceid with type imagetype
+47,get api twitter friendships lookup,what is my relation to screenname on twitter
+48,get api twitter friendships lookup,what is my relation to userid on twitter
+49,get api twitter friendships lookup,on twitter get the list of all my relations to these screenname users
+50,get api twitter friendships lookup,on twitter get the list of all my relations to these userid users
+51,post api twitter favorites destroy,unfavorite the last status id on twitter for me
+52,post api twitter favorites destroy,on twitter unfavorite this id status
+53,post scriptgoogle apis scripts scriptid:run,run this script scriptid on google scripts for me
+54,post scriptgoogle apis scripts scriptid:run,on google scripts run scriptid
+55,get ads api twitter accounts accountid tailoredaudiencechanges,get all the audience changes from accountid for the ad campaign on twitter
+56,get ads api twitter accounts accountid tailoredaudiencechanges,from twitter get all the audience changes for the ad campaign for account accountid
+57,get graph facebook page,get all the friends from facebook who the page page
+58,get graph facebook page,from facebook get all my mutual friends of user page
+59,get graph facebook applicationid objecttypes,get all the object types associated with this applicationid on facebook graph
+60,get graph facebook applicationid objecttypes,from facebook graph what are the object types associated with this applicationid
+63,post google m feeds contacts useremail full,create a new contact with name name and email email for this useremail on google
+64,put google m feeds contacts useremail full contactid,update the phone number to phonenumber of this contactid contact on google please
+61,get google m feeds contacts useremail full,get all of my contacts from google
+62,get google m feeds contacts useremail full contactid,from google get this contactids information from this useremail for me
+65,delete google m feeds contacts useremail full contactid,remove this contact contactid on this email account useremail for me
+66,get google m feeds groups useremail full,get all the contact groups for my email on google
+67,get google m feeds useremail full groupid,get the information about this contact group groupid from my email on google
+68,delete google m feeds groups useremail full groupid,delete this contact group from my email on google
+69,get google m feeds contacts useremail full,from google get the list of contacts for this useremail
+70,get google m feeds contacts useremail full contactid,get this contactids information from my google email
+71,post google m feeds contacts useremail full,on google create a new contact for me with email email and phone number phonenumber on my account 
+73,delete google m feeds contacts useremail full contactid,aura on google delete this contact contactid on my email account
+72,put google m feeds contacts useremail full contactid,on google update this contactids name to contactname
+74,get google m feeds groups useremail full,on google retrieve all contact groups for this user useremail
+75,get google m feeds useremail full groupid,from google grab the information about this contact group groupid for this user useremail
+76,delete google m feeds groups useremail full groupid,on google delete this contact group groupid from this user useremail
+77,post ads api twitter accounts accountid tailoredaudiences,create a new tailored audience for my twitter add campaign on account accountid
+78,post ads api twitter accounts accountid tailoredaudiences,on twitter create a new tailored audience for the ad campaign for account accountid
+79,post google apis games achievements achievementid increment,increase the number of steps by steps on my achievement achievementid on google games
+80,post google apis games achievements achievementid increment,for google games increase the number of steps by steps towards achievementid for me 
+81,get graph facebook commentid,get this comment commentid from facebook
+82,delete graph facebook commentid,delete this comment commentid from facebook
+83,post graph facebook commentid,edit the message message in my comment commentid on facebook
+85,get graph facebook commentid,on facebook grab this comment commentid from my account 
+84,delete graph facebook commentid,aura on my facebook account delete comment commentid
+86,post graph facebook commentid,facebook edit comment commentid message message 
+87,post ads api twitter accounts accountid promotedaccounts,associate user userid with line item lineitemid on twitter ads for account accountid
+88,post ads api twitter accounts accountid promotedaccounts,for twitter ads i want userid linked with lineitemid for account accountid
+89,get graph facebook placeid,get information about placeid from facebook for me
+90,get graph facebook placeid,aura grab some info about placeid from facebook please 
+91,get ads api twitter accounts accountid features,aura what am i allowed to do on this twitter ads account accountid
+92,get ads api twitter accounts accountid features,on twitter ads what features does this account accountid have
+93,post google apis games leaderboards leaderboardid scores,post my score score to this leaderboard leaderboardid on google games
+94,post google apis games leaderboards leaderboardid scores,aura send score google leaderboard leaderboardid score score
+95,get api twitter favorites list,get my last few favorite tweets
+96,get api twitter favorites list,for screenname get their last few favorite tweets
+97,get graph facebook userid videos,get all the videos made by this user userid from facebook
+98,get graph facebook userid videos uploaded,get only the videos uploaded by userid on facebook
+99,post graph video facebook pageid videos,upload this source to this page pageid for facebook
+100,post graph video facebook userid videos,upload video source to my facebook page
+101,get graph facebook userid videos,grab videos from userid facebook
+104,post graph video facebook eventid videos,upload video video to event page eventid on facebook
+102,get graph facebook userid videos uploaded,facebook videos userid user uploaded
+103,post graph video facebook pageid videos,upload source to page pageid facebook
+105,post graph video facebook userid videos,facebook post source video
+106,post graph video facebook eventid videos,facebook post video video event page eventid
+107,post ads api twitter accounts accountid appeventtags,create new application event tag for accountid on twitter with appstoreidentifier ostype and conversiontype
+108,post ads api twitter accounts accountid appeventtags,on twitter create event tag for accountid with appstoreidentifierostype and conversiontype
+109,post amazon services reports date,get the count of report requests from date off  of mws
+110,post amazon services reports date,get mws reports request count from date
+111,post amazon services products date,get estimated list of fees for these products and marketplaces feesestimaterequestlist for this date
+112,post amazon services products date,mws for date date estimate list of fees for these products and marketplaces feesestimaterequestlist
+113,get graph facebook userid friendlists,get my userid different friends lists on facebook
+114,get graph facebook userid friendlists,on facebook get the different friends list i userid have
+115,post amazon services subscriptions ,return a list of all my mws marketplace subscriptions for marketplaceid
+116,post amazon services subscriptions ,mws return all subs for marketplaceid
+117,delete ads api twitter accounts accountid features,remove these permissions featurekeys from my sandbox twitter ad account accountid
+118,delete ads api twitter accounts accountid features,delete features featurekeys from my twitter ad account accountid
+119,get ads api twitter targetingcriteria behaviors,what user behaviors can i target on twitter ads
+120,get ads api twitter targetingcriteria behaviors,on twitter ads what are some identified behavior groups
+121,delete ads api twitter accounts accountid appeventproviderconfigurations id,i accountid do not want to know about this app event provider id any longer on twitter ads
+122,delete ads api twitter accounts accountid appeventproviderconfigurations id,twitter ads disassociate app event provider id for my accountid account
+123,get graph facebook linkid,get information about this link linkid shared on facebook
+124,delete graph facebook linkid,remove this link linkid i shared on facebook
+125,get graph facebook linkid,facebook more info on link linkid
+126,delete graph facebook linkid,on facebook delete link linkid
+127,post upload twitter media upload,upload this image mediadata to my twitter 
+128,post upload twitter media upload,twitter post pic mediadata
+129,get graph facebook pageid,which of my friends like this page pageid on facebook
+130,get graph facebook pageid,on facebook what friends of mine like this page pageid
+131,get api twitter lists list,what lists am i screenname subscribed to on twitter
+132,get api twitter lists list,what lists does screenname subscribe to on twitter
+133,get graph facebook lifeeventid comments,what are the comments on my latest life news lifeeventid on facebook
+134,post graph facebook lifeeventid comments,post message to my life news lifeeventid on facebook
+135,get graph facebook lifeeventid comments,whos commenting on my big news lifeeventid on facebook
+136,post graph facebook lifeeventid comments,add message message to my life event lifeeventid on facebook
+137,get ads api twitter accounts accountid lineitems lineitemid,get this ad group lineitemid from my accountid twitter ads
+138,get ads api twitter accounts accountid lineitems lineitemid,what information do we have on this ad group lineitemid on my twitter ads account
+139,post post  api ad manager yahoo rest campaign,create new ad campaign on yahoo gemini with these attributes status status campaign name campaignname budget budget budget type budgettype advertiser id advertiserid channel channel
+140,post post  api ad manager yahoo rest campaign,on yahoo gemini create campaign with  status status campaign name campaignname budget budget budget type budgettype advertiser id advertiserid channel channel 
+141,get api ad manager yahoo rest campaign campaignid,what are the settings for this ad campaign campaignid on yahoo gemini
+142,put api ad manager yahoo rest adgroup,update ad group adgroupname with this info status status advertiser advertiserid campaign campaignid start date startdatestr end date enddatestr bids bidset on yahoo gemini
+143,get api ad manager yahoo rest campaign campaignid,on yahoo gemini what parameters does campaign campaignid have
+144,put api ad manager yahoo rest adgroup,on yahoo gemini change adgroupname with this info status status advertiser advertiserid campaign campaignid start date startdatestr end date enddatestr bids bidset
+145,get graph facebook applicationid customaudiencethirdpartyid,what audiences do i belong to for this app applicationid on facebook
+146,get graph facebook applicationid customaudiencethirdpartyid,on facebook what audiences does app applicationid include me in
+147,get ads api twitter accounts accountid cards videoappdownload id,get info about about this video card id i attached to my accountid tweet on twitter ads
+148,get ads api twitter accounts accountid cards videoappdownload id,on twitter ads what is the information on this video card id
+149,get graph facebook opengraphcontextid friendstaggedat,what friends were tagged at this place opengraphcontextid on facebook
+150,get graph facebook opengraphcontextid friendstaggedat,on facebook what friends were tagged here opengraphcontextid
+151,get graph facebook pageid,which of my friends listen to this music pageid on facebook
+152,get graph facebook pageid,on facebook what friends have listened to this artist pageid
+153,post api twitter lists members destroyall,remove these members screenname from my list listid on twitter
+154,post api twitter lists members destroyall,on twitter remove these people from my list: screenname listid
+155,get graph facebook userid friends,get a list of all my userid facebook friends
+156,get graph facebook userid friends,who are all of my userid friends on facebook
+157,get api twitter users suggestions,what people does twitter think i should follow
+158,get api twitter users suggestions,who should i follow on twitter
+159,get graph facebook lifeeventid photos,show me the photos of this wedding lifeeventid
+160,get graph facebook lifeeventid photos,what pictures are related to my graduation lifeeventid
+161,get graph facebook albumid picture,get the cover photo for this album albumid on facebook
+162,get graph facebook albumid picture,from facebook show me the cover of this album albumid
+163,delete ads api twitter accounts accountid tailoredaudiences tailoredaudienceid permissions tailoredaudiencepermissionid,revoke this permission tailoredaudiencepermissionid for this advertising account accountid for this audience tailoredaudienceid on twitter ads
+164,delete ads api twitter accounts accountid tailoredaudiences tailoredaudienceid permissions tailoredaudiencepermissionid,on twitter ads remove permission tailoredaudiencepermissionid from account accountid for audiencetailoredaudienceid
+165,get streamtwitter statuses sample,what are some twitter statuses
+166,get streamtwitter statuses sample,show me some random twitter statuses
+167,post api twitter users reportspam,report user screenname for spamming on twitter
+168,post api twitter users reportspam,on twitter report for spamming user screenname
+169,post google apis games management achievements reset,reset all my achievements on my google game 
+170,post google apis games management achievements reset,for my game on the google app store reset my achievements
+171,post api twitter lists subscribers destroy,unsubscribe me from this list listid on twitter
+172,post api twitter lists subscribers destroy,on twitter remove me from this list listid
+173,get graph facebook pageid screennames,what are other names for this facebook page pageid
+174,get graph facebook pageid screennames,on facebook show me other names for  page pageid
+175,get graph facebook pageid milestones,what are some achievements for my facebook page pageid
+176,get graph facebook pageid milestones,on facebook what are some cool things about this page pageid
+177,get graph facebook userid,what information is there on this facebook user userid
+178,get graph facebook userid,on facebook show me the information on myself userid
+179,put ads api twitter accounts accountid promotedtweets id,change the display on this tweet id on this advertiser account accountid to displayproperties
+180,put ads api twitter accounts accountid promotedtweets id,change my accountid promoted tweet id to these new display properties displayproperties
+181,post api twitter lists update,update my twitter list listid with name name mode mode and description description
+182,post api twitter lists update,change the name of my twitter list listid to name name
+183,get google apis games configuration achievements achievementid,get information about this google game achievement achievementid
+184,get google apis games configuration achievements achievementid,check the metadata about this google game achievement achievementid
+185, api.twitter.com . statuses retweets_of_me.json get,which tweets of mine were recently retweeted
+186, api.twitter.com . statuses retweets_of_me.json get,check the retweets of my latest tweets
+187,put ads api twitter accounts accountid fundinginstruments id,update this partner managed funding instrument id to this limit fundedamountlocalmicro for my twitter ad account accountid 
+188,put ads api twitter accounts accountid fundinginstruments id,change this twitter funding instrument id on my ad account accountid to this amount fundedamountlocalmicro 
+189,get api twitter statuses retweeters ids,what are the user ids of the people who retweeted this tweet id
+190,get api twitter statuses retweeters ids,who retweeted this tweet id
+191,get api twitter statuses hometimeline,what are the all the tweets recently tweeted by me and and who i follow
+192,get api twitter statuses hometimeline,what are my and the people i follows tweets
+193,get api twitter followers ids,who are my userid followers on twitter
+194,get api twitter followers ids,who follows this user userid on twitter
+195,get graph facebook userid,who are user userid and my mutual friends on facebook
+196,get graph facebook userid,on facebook what are my and users userid  mutual friends
+197,get graph facebook appid accounts testusers,list the test users on my facebook app appid
+198,get graph facebook appid accounts testusers,what are the test accounts on my facebook app appid
+199,get google apis discovery apis api version rest,get all the information on the google api api with version version
+200,get google apis discovery apis api version rest,show me what you know about the google api api with version version
+201,get api twitter blocks ids,who am i blocking on twitter
+202,get api twitter blocks ids,list all the people im blocking on twitter
+203,get ads api twitter accounts accountid cards imageconversation,show me the info on my accountid twitter ads image ad cards
+204,get ads api twitter accounts accountid cards imageconversation,get me all the information on this twitter ads accounts accountid image cards 
+205,get graph facebook videoid videoinsights,show me all these metrics metrics on a facebook video videoid
+206,get graph facebook videoid videoinsights,what are all the metrics metrics about this facebook video videoid
+207,get graph facebook pageid videos,what are all the videos on this pageid on facebook
+208,get graph facebook pageid videos,from facebook get me all the videos from this page pageid
+209,post ads api sandbox twitter accounts accountid fundinginstruments,create a new funding instrument on this twitter ads sandbox account accountid with type type currency currency and start time starttime
+210,post ads api sandbox twitter accounts accountid fundinginstruments,on my twitter ads sandbox account accountid make a funding instruments with type type currency currency and start time starttime
+211,get ads api twitter accounts accountid campaigns,list all of the ad campaigns from this twitter ads account accountid
+212,get ads api twitter accounts accountid campaigns,what are my accountid campaigns on twitter ads
+213,get graph facebook messageid,show me information about this message messageid sent from my facebook page
+214,get graph facebook messageid,from facebook get information about this message messageid typed from my page
+215,get graph facebook messageid attachments,download the picture from sams facebook message yesterdaymessageid
+216,get graph facebook messageid attachments,the video sam just facebookd memessageid
+217,get graph facebook messageid attachments,download the picture from sams facebook message yesterdaymessageid
+218,get graph facebook messageid attachments,download the picture from sams facebook message yesterdaymessageid
+219,get graph facebook messageid attachments,the video sam just facebookd memessageid
+220,get graph facebook messageid attachments,the video sam just facebookd memessageid
