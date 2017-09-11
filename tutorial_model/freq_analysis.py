@@ -1,4 +1,5 @@
 import nltk
+import math
 from glob import glob
 from pprint import pprint
 import json
@@ -51,11 +52,12 @@ random.shuffle(post_file_paths)
 
 
 def chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+    for i in range(0, len(l), int(math.ceil(len(l)/n))):
+        yield l[i:i + int(math.ceil(len(l)/n))]
 
 
 def analyse(file_paths):
+    print("Starting!")
 
     def clean(body):
         return strip_punctuation(strip_tags(body)).rstrip().lower()
@@ -64,20 +66,20 @@ def analyse(file_paths):
     freqs_by_text = {}
 
     for path in file_paths:
+        print('New File.')
         _id = path.split('/')[-1]
         freqs_by_text[_id] = nltk.FreqDist()
-        text_bodies = (json.loads(row)['body'] for row in open(path, 'r'))
+        text_bodies = [json.loads(row)['body'] for row in open(path, 'r')]
+        print(len(text_bodies))
         for text_body in text_bodies:
             tokens = clean(text_body).split(' ')
             freqs += nltk.FreqDist(nltk.bigrams(tokens))
             freqs_by_text[_id] += nltk.FreqDist(nltk.bigrams(tokens))
-        pprint('{0} : {1}'.format(_id, dict(freqs_by_text[_id])))
-
     return (freqs, freqs_by_text)
 
 
 chunked_paths = [chunk for chunk in chunks(post_file_paths, POOL_SIZE)]
-print(chunked_paths)
+
 with Pool(POOL_SIZE) as p:
     multi_returns = p.map(analyse, chunked_paths)
     final_freqs = nltk.FreqDist()
