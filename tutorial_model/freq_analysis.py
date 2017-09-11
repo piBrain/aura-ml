@@ -1,4 +1,5 @@
 import nltk
+import math
 from glob import glob
 from pprint import pprint
 import json
@@ -7,7 +8,7 @@ import string
 import random
 from multiprocessing import Pool
 
-POOL_SIZE = 2
+POOL_SIZE = 28
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -51,8 +52,8 @@ random.shuffle(post_file_paths)
 
 
 def chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+    for i in range(0, len(l), int(math.ceil(len(l)/n))):
+        yield l[i:i + int(math.ceil(len(l)/n))]
 
 
 def analyse(file_paths):
@@ -73,11 +74,11 @@ def analyse(file_paths):
             tokens = clean(text_body).split(' ')
             freqs += nltk.FreqDist(nltk.bigrams(tokens))
             freqs_by_text[_id] += nltk.FreqDist(nltk.bigrams(tokens))
-        pprint('{0} : {1}'.format(_id, dict(freqs_by_text[_id])))
-
     return (freqs, freqs_by_text)
 
 chunked_paths = [chunk for chunk in chunks(post_file_paths, POOL_SIZE)]
+for l in chunked_paths:
+    print(len(l))
 
 with Pool(POOL_SIZE) as p:
     multi_returns = p.map(analyse, chunked_paths)
