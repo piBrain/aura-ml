@@ -58,7 +58,7 @@ def chunks(l, n):
         yield l[i:i + int(math.ceil(len(l)/n))]
 
 
-def tokenize(file_path):
+def analyse(file_path):
 
     print('New File.')
 
@@ -66,22 +66,24 @@ def tokenize(file_path):
         return strip_punctuation(strip_tags(body)).rstrip().lower()
 
     tokens = []
-    _id = file_path.split('/')[-1]
 
     text_bodies = [json.loads(row)['body'] for row in open(file_path, 'r')]
     for text_body in text_bodies:
         tokens.extend(clean(text_body).split(' '))
     text_bodies = None
-    return tokens
+    finder = nltk.collocations.BigramCollocationFinder.from_words(tokens)
+    tokens = None
+    finder.apply_freq_filter(2)
+    return finder.ngram_fd
 
 
 start = time.clock()
 with Pool(POOL_SIZE, maxtasksperchild=2) as p:
-    tokens_lists = p.map(tokenize, post_file_paths)
-tokens = list(itertools.chain.from_iterable(tokens_lists))
-
-freqs = nltk.FreqDist(nltk.bigrams(tokens))
-tokens = None
+    freq_lists = p.map(analyse, post_file_paths)
+    freqs = nltk.FreqDist()
+    for i, fd in enumerate(freq_lists):
+        freqs += fd
+        freq_lists[i] = None
 
 with open('./freqs.json', 'w') as f:
     f.write(json_reformat(freqs))
