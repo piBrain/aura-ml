@@ -8,8 +8,8 @@ import string
 import random
 from multiprocessing import Pool
 import time
-
-POOL_SIZE = 4
+import itertools
+POOL_SIZE = 16
 
 
 class MLStripper(HTMLParser):
@@ -58,7 +58,7 @@ def chunks(l, n):
         yield l[i:i + int(math.ceil(len(l)/n))]
 
 
-def analyse(file_path):
+def tokenize(file_path):
 
     print('New File.')
 
@@ -71,28 +71,21 @@ def analyse(file_path):
     text_bodies = [json.loads(row)['body'] for row in open(file_path, 'r')]
     for text_body in text_bodies:
         tokens.extend(clean(text_body).split(' '))
-
-    return (
-        nltk.FreqDist(nltk.bigrams(tokens)),
-        {_id: nltk.FreqDist(nltk.bigrams(tokens))}
-    )
+    text_bodies = None
+    return tokens
 
 
 start = time.clock()
-with Pool(POOL_SIZE) as p:
-    multi_returns = p.map(analyse, post_file_paths)
-    final_freqs = nltk.FreqDist()
-    final_freqs_by_text = {}
-    for freq_tups in multi_returns:
-        final_freqs += freq_tups[0]
-        final_freqs_by_text = dict(final_freqs_by_text, **freq_tups[1])
+with Pool(POOL_SIZE, maxtasksperchild=2) as p:
+    tokens_lists = p.map(tokenize, post_file_paths)
+tokens = list(itertools.chain.from_iterable(tokens_lists))
 
-    with open('./freqs_by_text.json', 'w') as f:
-        for k, v in final_freqs_by_text.items():
-            f.write(json_reformat(v, k))
+freqs = nltk.FreqDist(nltk.bigrams(tokens))
+tokens = None
 
-    with open('./freqs.json', 'w') as f:
-        f.write(json_reformat(final_freqs))
+with open('./freqs.json', 'w') as f:
+    f.write(json_reformat(freqs))
+freqs = None
 end = time.clock()
 
 print(end-start)
