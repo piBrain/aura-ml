@@ -7,8 +7,10 @@ from html.parser import HTMLParser
 import string
 import random
 from multiprocessing import Pool
+import time
 
 POOL_SIZE = 4
+
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -56,32 +58,29 @@ def chunks(l, n):
         yield l[i:i + int(math.ceil(len(l)/n))]
 
 
-def analyse(file_paths):
-    print("Starting!")
+def analyse(file_path):
+
+    print('New File.')
 
     def clean(body):
         return strip_punctuation(strip_tags(body)).rstrip().lower()
 
-    freqs = nltk.FreqDist()
-    freqs_by_text = {}
+    tokens = []
+    _id = file_path.split('/')[-1]
 
-    for path in file_paths:
-        print('New File.')
-        _id = path.split('/')[-1]
-        freqs_by_text[_id] = nltk.FreqDist()
-        text_bodies = [json.loads(row)['body'] for row in open(path, 'r')]
-        print(len(text_bodies))
-        for text_body in text_bodies:
-            tokens = clean(text_body).split(' ')
-            freqs += nltk.FreqDist(nltk.bigrams(tokens))
-            freqs_by_text[_id] += nltk.FreqDist(nltk.bigrams(tokens))
-    return (freqs, freqs_by_text)
+    text_bodies = [json.loads(row)['body'] for row in open(file_path, 'r')]
+    for text_body in text_bodies:
+        tokens.extend(clean(text_body).split(' '))
+
+    return (
+        nltk.FreqDist(nltk.bigrams(tokens)),
+        {_id: nltk.FreqDist(nltk.bigrams(tokens))}
+    )
 
 
-chunked_paths = [chunk for chunk in chunks(post_file_paths, POOL_SIZE)]
-
+start = time.clock()
 with Pool(POOL_SIZE) as p:
-    multi_returns = p.map(analyse, chunked_paths)
+    multi_returns = p.map(analyse, post_file_paths)
     final_freqs = nltk.FreqDist()
     final_freqs_by_text = {}
     for freq_tups in multi_returns:
@@ -94,3 +93,6 @@ with Pool(POOL_SIZE) as p:
 
     with open('./freqs.json', 'w') as f:
         f.write(json_reformat(final_freqs))
+end = time.clock()
+
+print(end-start)
