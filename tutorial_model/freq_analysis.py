@@ -9,7 +9,7 @@ import random
 from multiprocessing import Pool
 import time
 import itertools
-POOL_SIZE = 16
+POOL_SIZE = 4
 
 
 class MLStripper(HTMLParser):
