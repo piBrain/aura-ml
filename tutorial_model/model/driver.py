@@ -37,7 +37,7 @@ def print_predictions(predictions):
 def main():
     features = None
     labels = None
-    estimator.inputs.numpy_input_fn(
+    input_fn = estimator.inputs.numpy_input_fn(
         x=features,
         y=labels,
         num_epochs=None,
@@ -50,9 +50,12 @@ def main():
         params=None
     )
     if len(argv) < 2 or argv[1] == 'train':
-        classifier.train()
+        classifier.train(input_fn)
     elif argv[1] == 'predict':
         predictions = classifier.predict()
         print_predictions(predictions)
     else:
         print('Unknown Operation.')
+
+if __name__ == '__main__':
+    main()
