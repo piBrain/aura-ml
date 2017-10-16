@@ -11,7 +11,7 @@ class Seq2Seq():
         average_across_timesteps=True
     ):
         if not enc_embedding:
-            self.enc_embedding = tf.contrib.layers.embed_sequence(
+            self.enc_embedding = tf.layers.embed_sequence(
                 inputs,
                 inp_vocab_size,
                 embed_dim,
@@ -22,13 +22,12 @@ class Seq2Seq():
             self.enc_embedding = enc_embedding
         if mode == tf.estimator.ModeKeys.TRAIN:
             if not dec_embedding:
-                self.dec_embedding = tf.contrib.layers.embed_sequence(
+                self.dec_embedding = tf.layers.embed_sequence(
                     outputs,
                     tgt_vocab_size,
                     embed_dim,
                     trainable=True,
-                    scope='embed',
-                    reuse=True
+                    scope='embed'
                 )
             else:
                 self.dec_embedding = dec_embedding
@@ -50,15 +49,14 @@ class Seq2Seq():
             encoder_cell,
             encoder_cell,
             self.enc_embedding,
-            sequence_length=seq_len,
-            time_major=self.time_major,
+            seq_len,
+            self.time_major,
             dtype=tf.float32
         )
 
-        return tf.concat(encoder_outputs, -1), encoder_state
+        return encoder_outputs, encoder_state
 
-
-    def decode(
+    def decoder(
         self, num_units, out_seq_len,
         encoder_state, cell=None, helper=None
     ):
@@ -108,7 +106,7 @@ class Seq2Seq():
                 initial_value=tf.random_uniform(
                     [self.batch_size, out_seq_len],
                     dtype=tf.float32,
-                    name='weight_uniform_initialiser'
+                    name='weight_uniform_initializer'
                 ),
                 dtype=tf.float32,
                 trainable=True
