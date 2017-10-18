@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from tensorflow.python.layers import core as layers_core
 
 class Seq2Seq():
 
@@ -79,7 +79,7 @@ class Seq2Seq():
                 self.dec_embedding,
                 out_seq_len,
             )
-        projection_layer = tf.layers.dense(self.tgt_vocab_size, use_bias=False)
+        projection_layer = layers_core.Dense(self.tgt_vocab_size, use_bias=False)
         decoder = tf.contrib.seq2seq.BasicDecoder(
             decoder_cell,
             helper,
@@ -88,7 +88,7 @@ class Seq2Seq():
         )
         outputs, _ = tf.contrib.seq2seq.dynamic_decode(
             decoder,
-            maximum_iterations=out_seq_len+5,
+            maximum_iterations=20,
             impute_finished=True
         )
         return outputs.rnn_output, outputs.sample_id
