@@ -15,7 +15,7 @@ download('wordnet', './nltk_data')
 download('averaged_perceptron_tagger')
 nltk.data.path.append('./nltk_data')
 
-DATASET = pd.read_csv('./processed_dataset.csv')
+DATASET = pd.read_csv('../data_files/processed_dataset.csv')
 
 SWAPS = {
     "google ": "amazon",

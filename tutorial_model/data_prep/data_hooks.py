@@ -49,7 +49,7 @@ class ModelInputs(object):
         if vocab_files[1] is None and share_vocab == False:
             raise ArgumentError('If share_vocab is set to false must provide target vocab. (src_vocab_file, \
                     target_vocab_file)')
-    
+
         src_vocab_table = lookup_ops.index_table_from_file(
             vocab_files[0],
             default_value=UNK_ID
@@ -68,7 +68,7 @@ class ModelInputs(object):
     def _create_iterator_hook(self, scope_name, iterator, file_path, name_placeholder):
         hook = IteratorInitializerHook()
         if self.mode == tf.estimator.ModeKeys.TRAIN or self.mode == tf.estimator.ModeKeys.EVAL:
-            feed_dict = { 
+            feed_dict = {
                     name_placeholder[0]: file_path[0],
                     name_placeholder[1]: file_path[1]
             }

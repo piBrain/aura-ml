@@ -1,5 +1,5 @@
 import tensorflow as tf
-
+from tensorflow.python.layers import core as layers_core
 
 class Seq2Seq():
 
@@ -11,7 +11,7 @@ class Seq2Seq():
         average_across_timesteps=True
     ):
         if not enc_embedding:
-            self.enc_embedding = tf.layers.embed_sequence(
+            self.enc_embedding = tf.contrib.layers.embed_sequence(
                 inputs,
                 inp_vocab_size,
                 embed_dim,
@@ -22,12 +22,13 @@ class Seq2Seq():
             self.enc_embedding = enc_embedding
         if mode == tf.estimator.ModeKeys.TRAIN:
             if not dec_embedding:
-                self.dec_embedding = tf.layers.embed_sequence(
+                self.dec_embedding = tf.contrib.layers.embed_sequence(
                     outputs,
                     tgt_vocab_size,
                     embed_dim,
                     trainable=True,
-                    scope='embed'
+                    scope='embed',
+                    reuse=True
                 )
             else:
                 self.dec_embedding = dec_embedding
@@ -40,23 +41,43 @@ class Seq2Seq():
         self.average_across_timesteps = average_across_timesteps
         self.time_major = time_major
 
-    def encode(self, num_units, seq_len, cell=None):
+    def _get_lstm(self, num_units):
+        return tf.nn.rnn_cell.BasicLSTMCell(num_units)
+
+    def encode(self, num_layers, num_units, seq_len, cell=None):
+        num_bi_layers = int(num_layers / 2)
         if cell:
             encoder_cell = cell
         else:
-            encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
-        encoder_outputs, encoder_state = tf.nn.bidirectional_dynamic_rnn(
+            encoder_cell = tf.contrib.rnn.MultiRNNCell([self._get_lstm(num_units) for _ in range(num_bi_layers)])
+
+        encoder_outputs, bi_encoder_state = tf.nn.bidirectional_dynamic_rnn(
             encoder_cell,
             encoder_cell,
             self.enc_embedding,
-            seq_len,
-            self.time_major,
+            sequence_length=seq_len,
+            time_major=self.time_major,
             dtype=tf.float32
         )
+        if num_bi_layers == 1:
+            encoder_state = bi_encoder_state
+        else:
+            encoder_state = []
+            c_state = []
+            h_state = []
+            for layer_id in range(num_bi_layers):
+                encoder_state.append(bi_encoder_state[0][layer_id])
+                encoder_state.append(bi_encoder_state[1][layer_id])
+            for lstm_tup in encoder_state:
+                c_state.append(lstm_tup.c)
+                h_state.append(lstm_tup.h)
+            c = tf.concat(c_state, axis=-1, name='lstm_state_c_concat')
+            h = tf.concat(h_state, axis=-1, name='lstm_state_h_concat')
+            encoder_state = tf.contrib.rnn.LSTMStateTuple(c=c, h=h)
 
-        return encoder_outputs, encoder_state
+        return tf.concat(encoder_outputs, -1), encoder_state
 
-    def decoder(
+    def decode(
         self, num_units, out_seq_len,
         encoder_state, cell=None, helper=None
     ):
@@ -64,7 +85,7 @@ class Seq2Seq():
         if cell:
             decoder_cell = cell
         else:
-            decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(num_units)
+            decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(2*num_units)
 
         if not helper:
             # dec_helper = ScheduledEmbeddingTrainingHelper(
@@ -77,7 +98,7 @@ class Seq2Seq():
                 self.dec_embedding,
                 out_seq_len,
             )
-        projection_layer = tf.layers.dense(self.tgt_vocab_size, use_bias=False)
+        projection_layer = layers_core.Dense(self.tgt_vocab_size, use_bias=False)
         decoder = tf.contrib.seq2seq.BasicDecoder(
             decoder_cell,
             helper,
@@ -86,7 +107,7 @@ class Seq2Seq():
         )
         outputs, _ = tf.contrib.seq2seq.dynamic_decode(
             decoder,
-            maximum_iterations=out_seq_len+5,
+            maximum_iterations=20,
             impute_finished=True
         )
         return outputs.rnn_output, outputs.sample_id
@@ -106,7 +127,7 @@ class Seq2Seq():
                 initial_value=tf.random_uniform(
                     [self.batch_size, out_seq_len],
                     dtype=tf.float32,
-                    name='weight_uniform_initializer'
+                    name='weight_uniform_initialiser'
                 ),
                 dtype=tf.float32,
                 trainable=True

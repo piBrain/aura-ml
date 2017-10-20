@@ -43,13 +43,11 @@ class Seq2Seq():
                     embed_dim,
                     trainable=True,
                     scope='embed',
-                    reuse=True
+                    reuse=True,
                 )
             else:
                 self.dec_embedding = dec_embedding
 
-        with tf.variable_scope('embed', reuse=True):
-            self.embeddings = tf.get_variable('embeddings')
         self.inp_vocab_size = inp_vocab_size
         self.tgt_vocab_size = tgt_vocab_size
         self.average_across_batch = average_across_batch
@@ -137,6 +135,7 @@ class Seq2Seq():
                 labels,
                 weights,
                 average_across_batch=self.average_across_batch,
+                average_across_timesteps=self.average_across_timesteps
             )
 
         if not train_op:
@@ -154,132 +153,116 @@ class Seq2Seq():
             train_op=train_op,
         )
 
-class ModelInputs(object):
-    """Factory to construct various input hooks and functions depending on mode """
+def get_inputs(file_path, vocab_files, batch_size, share_vocab=True, src_eos_id=1, tgt_eos_id=2, num_infer=None, mode=tf.estimator.ModeKeys.TRAIN):
+    with tf.name_scope('sentence_markers'):
+        src_eos_id = tf.constant(src_eos_id, dtype=tf.int64)
+        tgt_eos_id = tf.constant(tgt_eos_id, dtype=tf.int64)
+    vocab_tables = _create_vocab_tables(vocab_files, share_vocab)
+    if mode == tf.estimator.ModeKeys.TRAIN:
+        return _training_input_hook(file_path, vocab_tables, mode, batch_size, src_eos_id, tgt_eos_id)
+    if mode == tf.estimator.ModeKeys.EVAL:
+        return _validation_input_hook(file_path, vocab_tables, mode, batch_size, src_eos_id, tgt_eos_id)
+    if mode == tf.estimator.ModeKeys.PREDICT:
+        if num_infer is None:
+            raise ArgumentError('If performing inference must supply number of predictions to be made.')
+        return _infer_input_hook(file_path, num_infer, vocab_tables, batch_size, src_eos_id, tgt_eos_id)
 
-    def __init__(
-        self, vocab_files, batch_size,
-        share_vocab=True, src_eos_id=1, tgt_eos_id=2
-    ):
-        self.batch_size = batch_size
-        self.vocab_files = vocab_files
-        self.share_vocab = share_vocab
-        self.src_eos_id = src_eos_id
-        self.tgt_eos_id = tgt_eos_id
+def _prepare_data(dataset, vocab_tables, out=False):
+    prep_set = dataset.map(lambda string: tf.string_split([string]).values)
+    prep_set = prep_set.map(lambda words: (words, tf.size(words)))
+    if out == True:
+        return prep_set.map(lambda words, size: (vocab_tables[1].lookup(words), size))
+    return prep_set.map(lambda words, size: (vocab_tables[0].lookup(words), size))
 
-    def get_inputs(self, file_path, num_infer=None, mode=tf.estimator.ModeKeys.TRAIN):
-        self.mode = mode
-        if self.mode == tf.estimator.ModeKeys.TRAIN:
-            return self._training_input_hook(file_path)
-        if self.mode == tf.estimator.ModeKeys.EVAL:
-            return self._validation_input_hook(file_path)
-        if self.mode == tf.estimator.ModeKeys.PREDICT:
-            if num_infer is None:
-                raise ArgumentError('If performing inference must supply number of predictions to be made.')
-            return self._infer_input_hook(file_path, num_infer)
+def _batch_data(dataset, batch_size, mode, src_eos_id, tgt_eos_id):
+    batched_set = dataset.padded_batch(
+            batch_size,
+            padded_shapes=((tf.TensorShape([None]), tf.TensorShape([])), (tf.TensorShape([None]), tf.TensorShape([]))),
+            padding_values=((src_eos_id, 0), (tgt_eos_id, 0))
+    )
+    return batched_set
 
-    def _prepare_data(self, dataset, out=False):
-        prep_set = dataset.map(lambda string: tf.string_split([string]).values)
-        prep_set = prep_set.map(lambda words: (words, tf.size(words)))
-        if out == True:
-            return prep_set.map(lambda words, size: (self.vocab_tables[1].lookup(words), size))
-        return prep_set.map(lambda words, size: (self.vocab_tables[0].lookup(words), size))
+def _create_vocab_tables(vocab_files, share_vocab=False):
+    if vocab_files[1] is None and share_vocab == False:
+        raise ArgumentError('If share_vocab is set to false must provide target vocab. (src_vocab_file, \
+                target_vocab_file)')
 
-    def _batch_data(self, dataset):
-        batched_set = dataset.padded_batch(
-                self.batch_size,
-                padded_shapes=((tf.TensorShape([None]), tf.TensorShape([])), (tf.TensorShape([None]), tf.TensorShape([]))),
-                padding_values=((self.src_eos_id, 0), (self.tgt_eos_id, 0))
-        )
-        return batched_set
+    src_vocab_table = lookup_ops.index_table_from_file(
+        vocab_files[0],
+        default_value=UNK_ID
+    )
 
-    def _create_vocab_tables(self, vocab_files, share_vocab=False):
-        if vocab_files[1] is None and share_vocab == False:
-            raise ArgumentError('If share_vocab is set to false must provide target vocab. (src_vocab_file, \
-                    target_vocab_file)')
-
-        src_vocab_table = lookup_ops.index_table_from_file(
-            vocab_files[0],
+    if share_vocab:
+        tgt_vocab_table = src_vocab_table
+    else:
+        tgt_vocab_table = lookup_ops.index_table_from_file(
+            vocab_files[1],
             default_value=UNK_ID
         )
 
-        if share_vocab:
-            tgt_vocab_table = src_vocab_table
-        else:
-            tgt_vocab_table = lookup_ops.index_table_from_file(
-                vocab_files[1],
-                default_value=UNK_ID
-            )
+    return src_vocab_table, tgt_vocab_table
 
-        return src_vocab_table, tgt_vocab_table
+def _create_iterator_hook(scope_name, mode, iterator, file_path, name_placeholder):
+    hook = IteratorInitializerHook()
+    if mode == tf.estimator.ModeKeys.TRAIN or mode == tf.estimator.ModeKeys.EVAL:
+        feed_dict = {
+                name_placeholder[0]: file_path[0],
+                name_placeholder[1]: file_path[1]
+        }
+    else:
+        feed_dict = {name_placeholder: file_path}
 
-    def _prepare_iterator_hook(self, hook, scope_name, iterator, file_path, name_placeholder):
-        if self.mode == tf.estimator.ModeKeys.TRAIN or self.mode == tf.estimator.ModeKeys.EVAL:
-            feed_dict = {
-                    name_placeholder[0]: file_path[0],
-                    name_placeholder[1]: file_path[1]
-            }
-        else:
-            feed_dict = {name_placeholder: file_path}
+    with tf.name_scope(scope_name):
+        hook.iterator_initializer_func = \
+                lambda sess: sess.run(
+                    iterator.initializer,
+                    feed_dict=feed_dict,
+                )
+    return hook
 
-        with tf.name_scope(scope_name):
-            hook.iterator_initializer_func = \
-                    lambda sess: sess.run(
-                        iterator.initializer,
-                        feed_dict=feed_dict,
-                    )
+def _set_up_train_or_eval(scope_name, mode, vocab_tables, batch_size, file_path, src_eos_id, tgt_eos_id):
+    with tf.name_scope(scope_name):
+        in_file = tf.placeholder(tf.string, shape=())
+        in_dataset = _prepare_data(tf.contrib.data.TextLineDataset(in_file), vocab_tables)
+        out_file = tf.placeholder(tf.string, shape=())
+        out_dataset = _prepare_data(tf.contrib.data.TextLineDataset(out_file), vocab_tables)
+        dataset = tf.contrib.data.Dataset.zip((in_dataset, out_dataset))
+        dataset = _batch_data(dataset, mode, batch_size, src_eos_id, tgt_eos_id)
+        iterator = dataset.make_initializable_iterator()
 
-    def _set_up_train_or_eval(self, scope_name, file_path):
-        hook = IteratorInitializerHook()
-        def input_fn():
-            with tf.name_scope(scope_name):
-                with tf.name_scope('sentence_markers'):
-                    self.src_eos_id = tf.constant(self.src_eos_id, dtype=tf.int64)
-                    self.tgt_eos_id = tf.constant(self.tgt_eos_id, dtype=tf.int64)
-                self.vocab_tables = self._create_vocab_tables(self.vocab_files, self.share_vocab)
-                in_file = tf.placeholder(tf.string, shape=())
-                in_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(in_file))
-                out_file = tf.placeholder(tf.string, shape=())
-                out_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(out_file))
-                dataset = tf.contrib.data.Dataset.zip((in_dataset, out_dataset))
-                dataset = self._batch_data(dataset)
-                iterator = dataset.make_initializable_iterator()
-                next_example, next_label = iterator.get_next()
-                self._prepare_iterator_hook(hook, scope_name, iterator, file_path, (in_file, out_file))
-                return next_example, next_label
+    hook = _create_iterator_hook(scope_name, mode, iterator, file_path, (in_file, out_file))
 
-        return (input_fn, hook)
+    return (iterator, hook)
 
-    def _training_input_hook(self, file_path):
-        input_fn, hook = self._set_up_train_or_eval('train_inputs', file_path)
+def _training_input_hook(file_path, vocab_tables, batch_size, mode, src_eos_id, tgt_eos_id):
+    iterator, hook = _set_up_train_or_eval('train_inputs', mode, vocab_tables, batch_size, file_path, src_eos_id, tgt_eos_id)
 
-        return (input_fn, hook)
+    return (iterator, hook)
 
-    def _validation_input_hook(self, file_path):
-        input_fn, hook = self._set_up_train_or_eval('eval_inputs', file_path)
+def _validation_input_hook(file_path, vocab_tables, batch_size, mode, src_eos_id, tgt_eos_id):
+    iterator, hook = _set_up_train_or_eval('eval_inputs', mode, vocab_tables, batch_size, file_path, src_eos_id, tgt_eos_id)
 
-        return (input_fn, hook)
+    return (iterator, hook)
 
-    def _infer_input_hook(self, file_path, num_infer):
-        hook = IteratorInitializerHook()
-        with tf.name_scope('infer_inputs'):
-            infer_file = tf.placeholder(tf.string, shape=(num_infer))
-            dataset = tf.contrib.data.TextLineDataset(infer_file)
-            dataset = self._prepare_data(dataset)
-            dataset = self._batch_data(dataset)
-            iterator = dataset.make_initalizable_iterator()
+def _infer_input_hook(self, file_path, num_infer, mode, vocab_tables, batch_size, src_eos_id, tgt_eos_id):
+    with tf.name_scope('infer_inputs'):
+        infer_file = tf.placeholder(tf.string, shape=(num_infer))
+        dataset = tf.contrib.data.TextLineDataset(infer_file)
+        dataset = _prepare_data(dataset)
+        dataset = _batch_data(dataset, mode, batch_size, src_eos_id, tgt_eos_id)
+        iterator = dataset.make_initalizable_iterator()
 
-        hook = self._create_iterator_hook('infer_inputs', iterator, file_path, infer_file)
+    hook = _create_iterator_hook('infer_inputs', mode, iterator, file_path, infer_file)
 
-        return (self._input_fn(iterator), hook)
+    return (iterator, hook)
 
 
 class IteratorInitializerHook(tf.train.SessionRunHook):
     """Hook to initialise data iterator after Session is created."""
 
     def __init__(self):
-        super(IteratorInitializerHook, self).__init__()
-        self.iterator_initializer_func = None
+            super(IteratorInitializerHook, self).__init__()
+            self.iterator_initializer_func = None
 
     def after_create_session(self, session, coord):
         """Initialise the iterator after the session has been created."""
@@ -306,9 +289,12 @@ def model_fn(features, labels, mode, params, config):
     return spec
 
 def experiment_fn(run_config, hparams):
-    input_fn_factory = ModelInputs(hparams.vocab_paths, hparams.batch_size)
-    train_input_fn, train_input_hook = input_fn_factory.get_inputs(hparams.train_dataset_paths)
-    eval_input_fn, eval_input_hook = input_fn_factory.get_inputs(hparams.eval_dataset_paths, mode=estimator.ModeKeys.EVAL)
+    train_iter, train_input_hook = get_inputs(hparams.train_dataset_paths, hparams.vocab_paths, hparams.batch_size)
+    eval_iter, eval_input_hook = get_inputs(hparams.eval_dataset_paths, hparams.vocab_paths, hparams.batch_size, mode=estimator.ModeKeys.EVAL)
+    def train_input_fn():
+        return train_iter.get_next()
+    def eval_input_fn():
+        return eval_iter.get_next()
 
     exp_estimator = get_estimator(run_config, hparams)
     run_config.replace(save_checkpoints_steps=hparams.min_eval_frequency)
