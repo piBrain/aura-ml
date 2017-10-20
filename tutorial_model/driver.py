@@ -227,7 +227,6 @@ class ModelInputs(object):
                     lambda sess: sess.run(
                         iterator.initializer,
                         feed_dict=feed_dict,
-                        graph=TRAIN_GRAPH
                     )
 
     def _set_up_train_or_eval(self, scope_name, file_path):
