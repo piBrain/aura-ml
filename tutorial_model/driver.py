@@ -23,7 +23,7 @@ class Seq2Seq():
         outputs, inp_vocab_size, tgt_vocab_size,
         embed_dim, mode, time_major=False,
         enc_embedding=None, dec_embedding=None, average_across_batch=True,
-        average_across_timesteps=True
+        average_across_timesteps=True, vocab_path=None
     ):
         if not enc_embedding:
             self.enc_embedding = tf.contrib.layers.embed_sequence(
@@ -35,9 +35,9 @@ class Seq2Seq():
             )
         else:
             self.enc_embedding = enc_embedding
-        if mode == tf.estimator.ModeKeys.TRAIN:
+        if mode == tf.estimator.ModeKeys.TRAIN or mode == tf.estimator.ModeKeys.EVAL:
             if not dec_embedding:
-                self.dec_embedding = tf.contrib.layers.embed_sequence(
+                embed_outputs = tf.contrib.layers.embed_sequence(
                     outputs,
                     tgt_vocab_size,
                     embed_dim,
@@ -45,17 +45,27 @@ class Seq2Seq():
                     scope='embed',
                     reuse=True
                 )
-            else:
+                with tf.variable_scope('embed', reuse=True):
+                    dec_embedding = tf.get_variable('embeddings')
+                self.embed_outputs = embed_outputs
                 self.dec_embedding = dec_embedding
 
-        with tf.variable_scope('embed', reuse=True):
-            self.embeddings = tf.get_variable('embeddings')
+            else:
+                self.dec_embedding = dec_embedding
+        else:
+            with tf.variable_scope('embed', reuse=True):
+                self.dec_embedding = tf.get_variable('embeddings')
+
+        if mode == tf.estimator.ModeKeys.PREDICT and vocab_path is None:
+            raise ValueError('If mode is predict, must supply vocab_path')
+        self.vocab_path = vocab_path
         self.inp_vocab_size = inp_vocab_size
         self.tgt_vocab_size = tgt_vocab_size
         self.average_across_batch = average_across_batch
         self.average_across_timesteps = average_across_timesteps
         self.time_major = time_major
         self.batch_size = batch_size
+        self.mode = mode
 
     def _get_lstm(self, num_units):
         return tf.nn.rnn_cell.BasicLSTMCell(num_units)
@@ -67,7 +77,6 @@ class Seq2Seq():
         else:
             fw_cell = self._get_lstm(num_units)
             bw_cell = self._get_lstm(num_units)
-
         encoder_outputs, bi_encoder_state = tf.nn.bidirectional_dynamic_rnn(
             fw_cell,
             bw_cell,
@@ -81,26 +90,18 @@ class Seq2Seq():
         encoder_state = tf.contrib.rnn.LSTMStateTuple(c=c_state, h=h_state)
         return tf.concat(encoder_outputs, -1), encoder_state
 
-    def decode(
-        self, num_units, out_seq_len,
-        encoder_state, cell=None, helper=None
-    ):
-        if cell:
-            decoder_cell = cell
-        else:
-            decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(2*num_units)
-
+    def _train_decoder(self, decoder_cell, out_seq_len, encoder_state, helper):
         if not helper:
-            # dec_helper = ScheduledEmbeddingTrainingHelper(
-            #     self.dec_embedding,
-            #     embedding=self.embeddings,
-            #     seq_len,
-            #     sampling_probability,
-            # )
-            helper = tf.contrib.seq2seq.TrainingHelper(
-                self.dec_embedding,
+            helper = tf.contrib.seq2seq.ScheduledEmbeddingTrainingHelper(
+                self.embed_outputs,
                 out_seq_len,
+                self.dec_embedding,
+                0.3,
             )
+            # helper = tf.contrib.seq2seq.TrainingHelper(
+            #     self.dec_embedding,
+            #     out_seq_len,
+            # )
         projection_layer = layers_core.Dense(self.tgt_vocab_size, use_bias=False)
         decoder = tf.contrib.seq2seq.BasicDecoder(
             decoder_cell,
@@ -108,20 +109,66 @@ class Seq2Seq():
             encoder_state,
             output_layer=projection_layer
         )
-        outputs = tf.contrib.seq2seq.dynamic_decode(
-            decoder,
-            maximum_iterations=20,
-            swap_memory=True
+        return decoder
+
+    def _predict_decoder(self, cell, encoder_state, beam_width, length_penalty_weight):
+        tiled_encoder_state = tf.contrib.seq2seq.tile_batch(
+            encoder_state, multiplier=beam_width
         )
-        outputs = outputs[0]
-        return outputs.rnn_output, outputs.sample_id
+        with tf.name_scope('sentence_markers'):
+            sos_id = tf.constant(1, dtype=tf.int32)
+            eos_id = tf.constant(2, dtype=tf.int32)
+        start_tokens = tf.fill([self.batch_size], sos_id)
+        end_token = eos_id
+        projection_layer = layers_core.Dense(self.tgt_vocab_size, use_bias=False)
+        emb = tf.squeeze(self.dec_embedding)
+        decoder = tf.contrib.seq2seq.BeamSearchDecoder(
+            cell=cell,
+            embedding=self.dec_embedding,
+            start_tokens=start_tokens,
+            end_token=end_token,
+            initial_state=tiled_encoder_state,
+            beam_width=beam_width,
+            output_layer=projection_layer,
+            length_penalty_weight=length_penalty_weight
+        )
+        return decoder
+
+    def decode(
+        self, num_units, out_seq_len,
+        encoder_state, cell=None, helper=None,
+        beam_width=None, length_penalty_weight=None
+    ):
+        with tf.name_scope('Decode'):
+            if cell:
+                decoder_cell = cell
+            else:
+                decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(2*num_units)
+            if self.mode != estimator.ModeKeys.PREDICT:
+                decoder = self._train_decoder(decoder_cell, out_seq_len, encoder_state, helper)
+            else:
+                decoder = self._predict_decoder(decoder_cell, encoder_state, beam_width, length_penalty_weight)
+            outputs = tf.contrib.seq2seq.dynamic_decode(
+                decoder,
+                maximum_iterations=20,
+                swap_memory=True,
+            )
+            outputs = outputs[0]
+            if self.mode != estimator.ModeKeys.PREDICT:
+                return outputs.rnn_output, outputs.sample_id
+            else:
+                return outputs.beam_search_decoder_output, outputs.predicted_ids
 
     def prepare_predict(self, sample_id):
+        rev_table = lookup_ops.index_to_string_table_from_file(
+            self.vocab_path, default_value=UNK)
+        predictions = rev_table.lookup(tf.to_int64(sample_id))
         return tf.estimator.EstimatorSpec(
-            predictions=sample_id
+            predictions=predictions,
+            mode=tf.estimator.ModeKeys.PREDICT
         )
 
-    def prepare_train(
+    def prepare_train_eval(
         self, t_out,
         out_seq_len, labels, lr,
         train_op=None, loss=None
@@ -129,7 +176,6 @@ class Seq2Seq():
         if not loss:
             weights = tf.sequence_mask(
                 out_seq_len,
-                20,
                 dtype=t_out.dtype
             )
             loss = tf.contrib.seq2seq.sequence_loss(
@@ -149,7 +195,7 @@ class Seq2Seq():
             )
 
         return tf.estimator.EstimatorSpec(
-            mode=tf.estimator.ModeKeys.TRAIN,
+            mode=self.mode,
             loss=loss,
             train_op=train_op,
         )
@@ -175,7 +221,7 @@ class ModelInputs(object):
             return self._validation_input_hook(file_path)
         if self.mode == tf.estimator.ModeKeys.PREDICT:
             if num_infer is None:
-                raise ArgumentError('If performing inference must supply number of predictions to be made.')
+                raise ValueError('If performing inference must supply number of predictions to be made.')
             return self._infer_input_hook(file_path, num_infer)
 
     def _prepare_data(self, dataset, out=False):
@@ -185,17 +231,25 @@ class ModelInputs(object):
             return prep_set.map(lambda words, size: (self.vocab_tables[1].lookup(words), size))
         return prep_set.map(lambda words, size: (self.vocab_tables[0].lookup(words), size))
 
-    def _batch_data(self, dataset):
+    def _batch_data(self, dataset, src_eos_id, tgt_eos_id):
         batched_set = dataset.padded_batch(
                 self.batch_size,
                 padded_shapes=((tf.TensorShape([None]), tf.TensorShape([])), (tf.TensorShape([None]), tf.TensorShape([]))),
-                padding_values=((self.src_eos_id, 0), (self.tgt_eos_id, 0))
+                padding_values=((src_eos_id, 0), (tgt_eos_id, 0))
+        )
+        return batched_set
+
+    def _batch_infer_data(self, dataset, src_eos_id):
+        batched_set = dataset.padded_batch(
+            self.batch_size,
+            padded_shapes=(tf.TensorShape([None]), tf.TensorShape([])),
+            padding_values=(src_eos_id, 0)
         )
         return batched_set
 
     def _create_vocab_tables(self, vocab_files, share_vocab=False):
         if vocab_files[1] is None and share_vocab == False:
-            raise ArgumentError('If share_vocab is set to false must provide target vocab. (src_vocab_file, \
+            raise ValueError('If share_vocab is set to false must provide target vocab. (src_vocab_file, \
                     target_vocab_file)')
 
         src_vocab_table = lookup_ops.index_table_from_file(
@@ -234,15 +288,15 @@ class ModelInputs(object):
         def input_fn():
             with tf.name_scope(scope_name):
                 with tf.name_scope('sentence_markers'):
-                    self.src_eos_id = tf.constant(self.src_eos_id, dtype=tf.int64)
-                    self.tgt_eos_id = tf.constant(self.tgt_eos_id, dtype=tf.int64)
+                    src_eos_id = tf.constant(self.src_eos_id, dtype=tf.int64)
+                    tgt_eos_id = tf.constant(self.tgt_eos_id, dtype=tf.int64)
                 self.vocab_tables = self._create_vocab_tables(self.vocab_files, self.share_vocab)
                 in_file = tf.placeholder(tf.string, shape=())
-                in_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(in_file))
+                in_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(in_file).repeat(None))
                 out_file = tf.placeholder(tf.string, shape=())
-                out_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(out_file))
+                out_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(out_file).repeat(None))
                 dataset = tf.contrib.data.Dataset.zip((in_dataset, out_dataset))
-                dataset = self._batch_data(dataset)
+                dataset = self._batch_data(dataset, src_eos_id, tgt_eos_id)
                 iterator = dataset.make_initializable_iterator()
                 next_example, next_label = iterator.get_next()
                 self._prepare_iterator_hook(hook, scope_name, iterator, file_path, (in_file, out_file))
@@ -262,16 +316,22 @@ class ModelInputs(object):
 
     def _infer_input_hook(self, file_path, num_infer):
         hook = IteratorInitializerHook()
-        with tf.name_scope('infer_inputs'):
-            infer_file = tf.placeholder(tf.string, shape=(num_infer))
-            dataset = tf.contrib.data.TextLineDataset(infer_file)
-            dataset = self._prepare_data(dataset)
-            dataset = self._batch_data(dataset)
-            iterator = dataset.make_initalizable_iterator()
 
-        hook = self._create_iterator_hook('infer_inputs', iterator, file_path, infer_file)
+        def input_fn():
+            with tf.name_scope('infer_inputs'):
+                with tf.name_scope('sentence_markers'):
+                    src_eos_id = tf.constant(self.src_eos_id, dtype=tf.int64)
+                self.vocab_tables = self._create_vocab_tables(self.vocab_files, self.share_vocab)
+                infer_file = tf.placeholder(tf.string, shape=())
+                dataset = tf.contrib.data.TextLineDataset(infer_file)
+                dataset = self._prepare_data(dataset)
+                dataset = self._batch_infer_data(dataset, src_eos_id)
+                iterator = dataset.make_initializable_iterator()
+                next_example, seq_len = iterator.get_next()
+                self._prepare_iterator_hook(hook, 'infer_inputs', iterator, file_path, infer_file)
+                return ((next_example, seq_len), None)
 
-        return (self._input_fn(iterator), hook)
+        return (input_fn, hook)
 
 
 class IteratorInitializerHook(tf.train.SessionRunHook):
@@ -289,21 +349,31 @@ with open('./hyperparameters.json', 'r') as f:
     HPARAMS = json.load(f)
 
 def model_fn(features, labels, mode, params, config):
+    if labels:
+        label_data = labels[0]
+        out_seq_len = labels[1]
+    else:
+        label_data = None
+        out_seq_len = None
     model = Seq2Seq(
-            params.batch_size, features[0], labels[0],
+            params.batch_size, features[0], label_data,
             params.input_vocab_size, params.output_vocab_size, params.num_units,
-            mode
+            mode, vocab_path=params.vocab_paths[0]
     )
 
     enc_out, enc_state = model.encode(params.num_units, params.num_layers, features[1])
 
-    if mode == estimator.ModeKeys.TRAIN:
-        t_out, _ = model.decode(params.num_units, labels[1], enc_state)
-        spec = model.prepare_train(t_out, labels[1], labels[0], params.learning_rate)
+    if mode == estimator.ModeKeys.TRAIN or mode == estimator.ModeKeys.EVAL:
+        t_out, _ = model.decode(params.num_units, out_seq_len, enc_state)
+        spec = model.prepare_train_eval(t_out, out_seq_len, label_data, params.learning_rate)
     if mode == estimator.ModeKeys.PREDICT:
-        _, sample_id = model.decode(params.num_units, labels[1])
+        _, sample_id = model.decode(params.num_units, out_seq_len, enc_state, beam_width=params.beam_width,
+                length_penalty_weight=params.length_penalty_weight)
         spec = model.prepare_predict(sample_id)
     return spec
+
+def _set_up_infer():
+    pass
 
 def experiment_fn(run_config, hparams):
     input_fn_factory = ModelInputs(hparams.vocab_paths, hparams.batch_size)
@@ -321,7 +391,7 @@ def experiment_fn(run_config, hparams):
         min_eval_frequency=hparams.min_eval_frequency,
         train_monitors=[train_input_hook],
         eval_hooks=[eval_input_hook],
-        eval_steps=None
+        eval_steps=1000
     )
 
 def get_estimator(run_config, hparams):
@@ -331,9 +401,11 @@ def get_estimator(run_config, hparams):
         config=run_config,
     )
 
-def print_predictions(predictions):
+def print_predictions(predictions, hparams):
     for pred in predictions:
-        pprint(pred)
+        for sent in pred:
+            stred = map(str, sent)
+            print(' '.join(stred))
 
 def main():
     hparams = HParams(**HPARAMS)
@@ -347,7 +419,12 @@ def main():
             hparams=hparams,
         )
     elif argv[1] == 'predict':
-        pass
+        input_fn_factory = ModelInputs(hparams.vocab_paths, hparams.batch_size)
+        predict_input_fn, predict_input_hook = input_fn_factory.get_inputs(hparams.predict_dataset_path,
+                mode=estimator.ModeKeys.PREDICT, num_infer=20)
+        classifier = get_estimator(run_config, hparams)
+        predictions = classifier.predict(input_fn=predict_input_fn, hooks=[predict_input_hook])
+        print_predictions(predictions, hparams)
     else:
         print('Unknown Operation.')
 
