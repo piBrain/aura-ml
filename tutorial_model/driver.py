@@ -8,6 +8,8 @@ from tensorflow.python.ops import lookup_ops
 from tensorflow.python.layers import core as layers_core
 from tensorflow.contrib.learn import learn_runner, RunConfig, Experiment
 from tensorflow.contrib.training import HParams
+from gensim.models import KeyedVectors
+import numpy as np
 import json
 
 TRAIN_GRAPH = tf.Graph()
@@ -23,15 +25,17 @@ class Seq2Seq():
         outputs, inp_vocab_size, tgt_vocab_size,
         embed_dim, mode, time_major=False,
         enc_embedding=None, dec_embedding=None, average_across_batch=True,
-        average_across_timesteps=True, vocab_path=None
+        average_across_timesteps=True, vocab_path=None, embedding_path='./data_files/wiki.simple.vec'
     ):
+        embed_np = self._get_embedding(embedding_path)
         if not enc_embedding:
             self.enc_embedding = tf.contrib.layers.embed_sequence(
                 inputs,
                 inp_vocab_size,
                 embed_dim,
                 trainable=True,
-                scope='embed'
+                scope='embed',
+                initializer=tf.constant_initializer(value=embed_np, dtype=tf.float32)
             )
         else:
             self.enc_embedding = enc_embedding
@@ -66,6 +70,12 @@ class Seq2Seq():
         self.time_major = time_major
         self.batch_size = batch_size
         self.mode = mode
+
+    def _get_embedding(self, embedding_path):
+        model = KeyedVectors.load_word2vec_format(embedding_path)
+        vocab = model.vocab
+        vocab_len = len(vocab)
+        return np.array([model.word_vec(k) for k in vocab.keys()])
 
     def _get_lstm(self, num_units):
         return tf.nn.rnn_cell.BasicLSTMCell(num_units)

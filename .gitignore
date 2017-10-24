@@ -6,5 +6,6 @@ tutorial_model/data.tar.gz
 tutorial_model/freqs.json
 tutorial_model/data_files/*
 tutorial_model/save/*
+tutorial_model/prev_runs/*
 tutorial_model/synth_generation/nltk_data/*
 __pycache__

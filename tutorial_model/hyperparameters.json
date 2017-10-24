@@ -1,5 +1,5 @@
 {
-    "num_units": 30,
+    "num_units": 300,
     "peepholes": true,
     "keep_probability": 0.7160809299704125,
     "time_major": false,
