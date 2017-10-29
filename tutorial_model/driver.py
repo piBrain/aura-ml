@@ -144,8 +144,14 @@ class Seq2Seq():
         )
         return decoder
 
+    def _attention(self, num_units, memory, memory_sequence_length, beam_width=None):
+        if beam_width:
+            memory = tf.contrib.seq2seq.tile_batch(memory, multiplier=beam_width)
+            memory_sequence_length = tf.contrib.seq2seq.tile_batch(memory_sequence_length, multipler=beam_width)
+        return tf.contrib.seq2seq.BahdanauAttention(num_units, memory, memory_sequence_length)
+
     def decode(
-        self, num_units, out_seq_len,
+        self, num_units, out_seq_len, in_seq_len, encoder_outputs,
         encoder_state, cell=None, helper=None,
         beam_width=None, length_penalty_weight=None
     ):
@@ -154,6 +160,14 @@ class Seq2Seq():
                 decoder_cell = cell
             else:
                 decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(2*num_units)
+                attention_mechanism = self._attention(2*num_units, encoder_outputs, in_seq_len)
+                decoder_cell = tf.contrib.Seq2Seq.AttentionWrapper(
+                    decoder_cell,
+                    attention_mechanism,
+                    attention_layer_size=2*num_units,
+                    alignment_history=False,
+                    name='attention_wrapper'
+                )
             if self.mode != estimator.ModeKeys.PREDICT:
                 decoder = self._train_decoder(decoder_cell, out_seq_len, encoder_state, helper)
             else:
@@ -367,7 +381,7 @@ def model_fn(features, labels, mode, params, config):
         out_seq_len = None
     model = Seq2Seq(
             params.batch_size, features[0], label_data,
-            params.input_vocab_size, params.output_vocab_size, params.num_units,
+            params.input_vocab_size, params.output_vocab_size, params.num_units*10,
             mode, vocab_path=params.vocab_paths[0]
     )
 
