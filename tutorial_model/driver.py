@@ -106,7 +106,7 @@ class Seq2Seq():
                 self.embed_outputs,
                 out_seq_len,
                 self.dec_embedding,
-                0.3,
+                0.6,
             )
             # helper = tf.contrib.seq2seq.TrainingHelper(
             #     self.dec_embedding,
@@ -122,9 +122,6 @@ class Seq2Seq():
         return decoder
 
     def _predict_decoder(self, cell, encoder_state, beam_width, length_penalty_weight):
-        tiled_encoder_state = tf.contrib.seq2seq.tile_batch(
-            encoder_state, multiplier=beam_width
-        )
         with tf.name_scope('sentence_markers'):
             sos_id = tf.constant(1, dtype=tf.int32)
             eos_id = tf.constant(2, dtype=tf.int32)
@@ -137,7 +134,7 @@ class Seq2Seq():
             embedding=self.dec_embedding,
             start_tokens=start_tokens,
             end_token=end_token,
-            initial_state=tiled_encoder_state,
+            initial_state=encoder_state,
             beam_width=beam_width,
             output_layer=projection_layer,
             length_penalty_weight=length_penalty_weight
@@ -147,7 +144,7 @@ class Seq2Seq():
     def _attention(self, num_units, memory, memory_sequence_length, beam_width=None):
         if beam_width:
             memory = tf.contrib.seq2seq.tile_batch(memory, multiplier=beam_width)
-            memory_sequence_length = tf.contrib.seq2seq.tile_batch(memory_sequence_length, multipler=beam_width)
+            memory_sequence_length = tf.contrib.seq2seq.tile_batch(memory_sequence_length, multiplier=beam_width)
         return tf.contrib.seq2seq.BahdanauAttention(num_units, memory, memory_sequence_length)
 
     def decode(
@@ -160,8 +157,12 @@ class Seq2Seq():
                 decoder_cell = cell
             else:
                 decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(2*num_units)
-                attention_mechanism = self._attention(2*num_units, encoder_outputs, in_seq_len)
-                decoder_cell = tf.contrib.Seq2Seq.AttentionWrapper(
+                if beam_width:
+                    print(beam_width)
+                    attention_mechanism = self._attention(2*num_units, encoder_outputs, in_seq_len, beam_width)
+                else:
+                    attention_mechanism = self._attention(2*num_units, encoder_outputs, in_seq_len)
+                decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                     decoder_cell,
                     attention_mechanism,
                     attention_layer_size=2*num_units,
@@ -169,14 +170,29 @@ class Seq2Seq():
                     name='attention_wrapper'
                 )
             if self.mode != estimator.ModeKeys.PREDICT:
-                decoder = self._train_decoder(decoder_cell, out_seq_len, encoder_state, helper)
+                attn_encoder_state = decoder_cell.zero_state(self.batch_size, tf.float32).clone(cell_state=encoder_state)
+                decoder = self._train_decoder(decoder_cell, out_seq_len, attn_encoder_state, helper)
+                outputs = tf.contrib.seq2seq.dynamic_decode(
+                    decoder,
+                    maximum_iterations=20,
+                    impute_finished=True,
+                    swap_memory=True,
+                )
             else:
-                decoder = self._predict_decoder(decoder_cell, encoder_state, beam_width, length_penalty_weight)
-            outputs = tf.contrib.seq2seq.dynamic_decode(
-                decoder,
-                maximum_iterations=20,
-                swap_memory=True,
-            )
+                tiled_encoder_state = tf.contrib.seq2seq.tile_batch(
+                    encoder_state, multiplier=beam_width
+                )
+                # tiled_encoder_state = tf.nn.rnn_cell.LSTMStateTuple(
+                #     tf.contrib.seq2seq.tile_batch(encoder_state[0], multipler=beam_width),
+                #     tf.contrib.seq2seq.tile_batch(encoder_state[1], multipler=beam_width)
+                # )
+                attn_encoder_state = decoder_cell.zero_state(self.batch_size*beam_width, tf.float32).clone(cell_state=tiled_encoder_state)
+                decoder = self._predict_decoder(decoder_cell, attn_encoder_state, beam_width, length_penalty_weight)
+                outputs = tf.contrib.seq2seq.dynamic_decode(
+                    decoder,
+                    maximum_iterations=20,
+                    swap_memory=True,
+                )
             outputs = outputs[0]
             if self.mode != estimator.ModeKeys.PREDICT:
                 return outputs.rnn_output, outputs.sample_id
@@ -388,10 +404,10 @@ def model_fn(features, labels, mode, params, config):
     enc_out, enc_state = model.encode(params.num_units, params.num_layers, features[1])
 
     if mode == estimator.ModeKeys.TRAIN or mode == estimator.ModeKeys.EVAL:
-        t_out, _ = model.decode(params.num_units, out_seq_len, enc_state)
+        t_out, _ = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state)
         spec = model.prepare_train_eval(t_out, out_seq_len, label_data, params.learning_rate)
     if mode == estimator.ModeKeys.PREDICT:
-        _, sample_id = model.decode(params.num_units, out_seq_len, enc_state, beam_width=params.beam_width,
+        _, sample_id = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state, beam_width=params.beam_width,
                 length_penalty_weight=params.length_penalty_weight)
         spec = model.prepare_predict(sample_id)
     return spec
