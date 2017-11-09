@@ -245,13 +245,14 @@ class ModelInputs(object):
 
     def __init__(
         self, vocab_files, batch_size,
-        share_vocab=True, src_eos_id=1, tgt_eos_id=2
+        share_vocab=True, src_eos_id=2, tgt_eos_id=2, tgt_sos_id=1
     ):
         self.batch_size = batch_size
         self.vocab_files = vocab_files
         self.share_vocab = share_vocab
         self.src_eos_id = src_eos_id
         self.tgt_eos_id = tgt_eos_id
+        self.tgt_sos_id = tgt_sos_id
 
     def get_inputs(self, file_path, num_infer=None, mode=tf.estimator.ModeKeys.TRAIN):
         self.mode = mode
@@ -266,18 +267,29 @@ class ModelInputs(object):
 
     def _prepare_data(self, dataset, out=False):
         prep_set = dataset.map(lambda string: tf.string_split([string]).values)
-        prep_set = prep_set.map(lambda words: (words, tf.size(words)))
         if out == True:
-            return prep_set.map(lambda words, size: (self.vocab_tables[1].lookup(words), size))
-        return prep_set.map(lambda words, size: (self.vocab_tables[0].lookup(words), size))
+            return prep_set.map(lambda words: self.vocab_tables[1].lookup(words))
+        return prep_set.map(lambda words: self.vocab_tables[0].lookup(words))
 
     def _batch_data(self, dataset, src_eos_id, tgt_eos_id):
         batched_set = dataset.padded_batch(
                 self.batch_size,
-                padded_shapes=((tf.TensorShape([None]), tf.TensorShape([])), (tf.TensorShape([None]), tf.TensorShape([]))),
-                padding_values=((src_eos_id, 0), (tgt_eos_id, 0))
+                padded_shapes=((tf.TensorShape([None]), tf.TensorShape([])), (tf.TensorShape([None]), tf.TensorShape([None]), tf.TensorShape([]))),
+                padding_values=((src_eos_id, 0), (tgt_eos_id, tgt_eos_id, 0))
         )
         return batched_set
+    def _bucket_data(self, dataset, src_eos_id, tgt_eos_id):
+        def key_func(src, tgt):
+            src_len = src[-1]
+            tgt_len = tgt[-1]
+            num_buckets = 4
+            bucket_width = 5
+            bucket_id = tf.maximum(src_len // bucket_width, tgt_len // bucket_width)
+            return tf.to_int64(tf.minimum(num_buckets, bucket_id))
+        def reduce_func(unused_key, windowed_data):
+            return self._batch_data(windowed_data, src_eos_id, tgt_eos_id)
+        return dataset.apply(tf.contrib.data.group_by_window(key_func=key_func, reduce_func=reduce_func,
+            window_size=self.batch_size))
 
     def _batch_infer_data(self, dataset, src_eos_id):
         batched_set = dataset.padded_batch(
@@ -327,16 +339,21 @@ class ModelInputs(object):
         hook = IteratorInitializerHook()
         def input_fn():
             with tf.name_scope(scope_name):
+                self.vocab_tables = self._create_vocab_tables(self.vocab_files, self.share_vocab)
                 with tf.name_scope('sentence_markers'):
                     src_eos_id = tf.constant(self.src_eos_id, dtype=tf.int64)
                     tgt_eos_id = tf.constant(self.tgt_eos_id, dtype=tf.int64)
-                self.vocab_tables = self._create_vocab_tables(self.vocab_files, self.share_vocab)
+                    tgt_sos_id = tf.constant(self.tgt_sos_id, dtype=tf.int64)
                 in_file = tf.placeholder(tf.string, shape=())
                 in_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(in_file).repeat(None))
                 out_file = tf.placeholder(tf.string, shape=())
                 out_dataset = self._prepare_data(tf.contrib.data.TextLineDataset(out_file).repeat(None))
                 dataset = tf.contrib.data.Dataset.zip((in_dataset, out_dataset))
-                dataset = self._batch_data(dataset, src_eos_id, tgt_eos_id)
+                dataset = dataset.map(lambda src, tgt: (src, tf.concat(([tgt_sos_id], tgt), 0), tf.concat((tgt,
+                    [tgt_eos_id]), 0)))
+                dataset = dataset.map(lambda src, tgt_in, tgt_out: ((src, tf.size(src)), (tgt_in, tgt_out,
+                    tf.size(tgt_in))))
+                dataset = self._bucket_data(dataset, src_eos_id, tgt_eos_id)
                 iterator = dataset.make_initializable_iterator()
                 next_example, next_label = iterator.get_next()
                 self._prepare_iterator_hook(hook, scope_name, iterator, file_path, (in_file, out_file))
@@ -391,7 +408,7 @@ with open('./hyperparameters.json', 'r') as f:
 def model_fn(features, labels, mode, params, config):
     if labels:
         label_data = labels[0]
-        out_seq_len = labels[1]
+        out_seq_len = labels[-1]
     else:
         label_data = None
         out_seq_len = None
@@ -409,7 +426,7 @@ def model_fn(features, labels, mode, params, config):
 
     if mode == estimator.ModeKeys.TRAIN or mode == estimator.ModeKeys.EVAL:
         t_out, _ = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state)
-        spec = model.prepare_train_eval(t_out, out_seq_len, label_data, params.learning_rate)
+        spec = model.prepare_train_eval(t_out, out_seq_len, labels[1], params.learning_rate)
     if mode == estimator.ModeKeys.PREDICT:
         _, sample_id = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state, beam_width=params.beam_width,
                 length_penalty_weight=params.length_penalty_weight)
