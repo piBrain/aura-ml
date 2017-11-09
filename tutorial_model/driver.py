@@ -158,7 +158,6 @@ class Seq2Seq():
             else:
                 decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(2*num_units)
                 if beam_width:
-                    print(beam_width)
                     attention_mechanism = self._attention(2*num_units, encoder_outputs, in_seq_len, beam_width)
                 else:
                     attention_mechanism = self._attention(2*num_units, encoder_outputs, in_seq_len)
@@ -174,7 +173,7 @@ class Seq2Seq():
                 decoder = self._train_decoder(decoder_cell, out_seq_len, attn_encoder_state, helper)
                 outputs = tf.contrib.seq2seq.dynamic_decode(
                     decoder,
-                    maximum_iterations=20,
+                    maximum_iterations=11,
                     impute_finished=True,
                     swap_memory=True,
                 )
@@ -190,7 +189,7 @@ class Seq2Seq():
                 decoder = self._predict_decoder(decoder_cell, attn_encoder_state, beam_width, length_penalty_weight)
                 outputs = tf.contrib.seq2seq.dynamic_decode(
                     decoder,
-                    maximum_iterations=20,
+                    maximum_iterations=11,
                     swap_memory=True,
                 )
             outputs = outputs[0]
@@ -199,7 +198,8 @@ class Seq2Seq():
             else:
                 return outputs.beam_search_decoder_output, outputs.predicted_ids
 
-    def prepare_predict(self, sample_id):
+
+    def prepare_predict(self, sample_id, beam_width):
         rev_table = lookup_ops.index_to_string_table_from_file(
             self.vocab_path, default_value=UNK)
         predictions = rev_table.lookup(tf.to_int64(sample_id))
@@ -395,8 +395,12 @@ def model_fn(features, labels, mode, params, config):
     else:
         label_data = None
         out_seq_len = None
+    if mode != estimator.ModeKeys.PREDICT:
+        batch_size = params.batch_size
+    else:
+        batch_size = 1
     model = Seq2Seq(
-            params.batch_size, features[0], label_data,
+            batch_size, features[0], label_data,
             params.input_vocab_size, params.output_vocab_size, params.num_units*10,
             mode, vocab_path=params.vocab_paths[0]
     )
@@ -409,7 +413,7 @@ def model_fn(features, labels, mode, params, config):
     if mode == estimator.ModeKeys.PREDICT:
         _, sample_id = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state, beam_width=params.beam_width,
                 length_penalty_weight=params.length_penalty_weight)
-        spec = model.prepare_predict(sample_id)
+        spec = model.prepare_predict(sample_id, params.beam_width)
     return spec
 
 def _set_up_infer():
@@ -441,11 +445,14 @@ def get_estimator(run_config, hparams):
         config=run_config,
     )
 
+
 def print_predictions(predictions, hparams):
     for pred in predictions:
-        for sent in pred:
-            stred = map(str, sent)
-            print(' '.join(stred))
+        sentence = []
+        for x in pred:
+            sentence.append(x[0])
+        print(sentence)
+        print('--------------------------------------------')
 
 def main():
     hparams = HParams(**HPARAMS)
@@ -459,9 +466,9 @@ def main():
             hparams=hparams,
         )
     elif argv[1] == 'predict':
-        input_fn_factory = ModelInputs(hparams.vocab_paths, hparams.batch_size)
+        input_fn_factory = ModelInputs(hparams.vocab_paths, 1)
         predict_input_fn, predict_input_hook = input_fn_factory.get_inputs(hparams.predict_dataset_path,
-                mode=estimator.ModeKeys.PREDICT, num_infer=20)
+                mode=estimator.ModeKeys.PREDICT, num_infer=1)
         classifier = get_estimator(run_config, hparams)
         predictions = classifier.predict(input_fn=predict_input_fn, hooks=[predict_input_hook])
         print_predictions(predictions, hparams)
