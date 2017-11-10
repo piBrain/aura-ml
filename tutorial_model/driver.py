@@ -288,8 +288,8 @@ class ModelInputs(object):
             return tf.to_int64(tf.minimum(num_buckets, bucket_id))
         def reduce_func(unused_key, windowed_data):
             return self._batch_data(windowed_data, src_eos_id, tgt_eos_id)
-        return dataset.apply(tf.contrib.data.group_by_window(key_func=key_func, reduce_func=reduce_func,
-            window_size=self.batch_size))
+        return dataset.group_by_window(key_func=key_func, reduce_func=reduce_func,
+            window_size=self.batch_size)
 
     def _batch_infer_data(self, dataset, src_eos_id):
         batched_set = dataset.padded_batch(
