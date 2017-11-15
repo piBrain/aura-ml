@@ -22,7 +22,7 @@
     "output_vocab_size": 111153,
     "num_steps": 150000,
     "train_dataset_paths" : ["./data_files/training_in.csv", "./data_files/training_out.csv"],
-    "predict_dataset_path" : "./data_files/training_in.csv",
+    "predict_dataset_path" : "./data_files/test_in.csv",
     "eval_dataset_paths" : ["./data_files/validation_in.csv", "./data_files/validation_out.csv"],
     "vocab_paths" : ["./data_files/vocab_list.txt", null],
     "min_eval_frequency": 1000

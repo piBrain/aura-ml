@@ -382,6 +382,7 @@ class ModelInputs(object):
                 infer_file = tf.placeholder(tf.string, shape=())
                 dataset = tf.contrib.data.TextLineDataset(infer_file)
                 dataset = self._prepare_data(dataset)
+                dataset = dataset.map(lambda src: (src, tf.size(src)))
                 dataset = self._batch_infer_data(dataset, src_eos_id)
                 iterator = dataset.make_initializable_iterator()
                 next_example, seq_len = iterator.get_next()
