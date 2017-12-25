@@ -357,7 +357,7 @@ class ModelInputs(object):
                 iterator = dataset.make_initializable_iterator()
                 next_example, next_label = iterator.get_next()
                 self._prepare_iterator_hook(hook, scope_name, iterator, file_path, (in_file, out_file))
-                return next_example, next_label
+                return { 'input': next_example[0], 'input_sz': next_example[1] }, next_label
 
         return (input_fn, hook)
 
@@ -418,18 +418,18 @@ def model_fn(features, labels, mode, params, config):
     else:
         batch_size = 1
     model = Seq2Seq(
-            batch_size, features[0], label_data,
+            batch_size, features['input'], label_data,
             params.input_vocab_size, params.output_vocab_size, params.num_units*10,
             mode, vocab_path=params.vocab_paths[0]
     )
 
-    enc_out, enc_state = model.encode(params.num_units, params.num_layers, features[1])
+    enc_out, enc_state = model.encode(params.num_units, params.num_layers, features['input_sz'])
 
     if mode == estimator.ModeKeys.TRAIN or mode == estimator.ModeKeys.EVAL:
-        t_out, _ = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state)
+        t_out, _ = model.decode(params.num_units, out_seq_len, features['input_sz'], enc_out, enc_state)
         spec = model.prepare_train_eval(t_out, out_seq_len, labels[1], params.learning_rate)
     if mode == estimator.ModeKeys.PREDICT:
-        _, sample_id = model.decode(params.num_units, out_seq_len, features[1], enc_out, enc_state, beam_width=params.beam_width,
+        _, sample_id = model.decode(params.num_units, out_seq_len, features['input_sz'], enc_out, enc_state, beam_width=params.beam_width,
                 length_penalty_weight=params.length_penalty_weight)
         spec = model.prepare_predict(sample_id, params.beam_width)
     return spec
@@ -446,8 +446,8 @@ def experiment_fn(run_config, hparams):
     run_config.replace(save_checkpoints_steps=hparams.min_eval_frequency)
 
     features = {
-        'input': tf.VarLenFeature(dtype=tf.int32),
-        'input_sz': tf.VarLenFeature(dtype=tf.int32)
+        'input': tf.VarLenFeature(dtype=tf.int64),
+        'input_sz': tf.VarLenFeature(dtype=tf.int64)
     }
     serving_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(features)
 
