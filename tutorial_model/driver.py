@@ -445,6 +445,14 @@ def experiment_fn(run_config, hparams):
     exp_estimator = get_estimator(run_config, hparams)
     run_config.replace(save_checkpoints_steps=hparams.min_eval_frequency)
 
+    features = {
+        'input': tf.VarLenFeature(dtype=tf.int32),
+        'input_sz': tf.FixedLenFeature(dtype=tf.int32)
+    }
+    serving_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(features)
+
+    stategy = tf.contrib.learn.make_export_strategy(serving_fn)
+
     return Experiment(
         estimator=exp_estimator,
         train_input_fn=train_input_fn,
@@ -453,6 +461,7 @@ def experiment_fn(run_config, hparams):
         min_eval_frequency=hparams.min_eval_frequency,
         train_monitors=[train_input_hook],
         eval_hooks=[eval_input_hook],
+        export_strategies=strategy,
         eval_steps=1000
     )
 

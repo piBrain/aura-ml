@@ -9,3 +9,4 @@ tutorial_model/save/*
 tutorial_model/prev_runs/*
 tutorial_model/synth_generation/nltk_data/*
 __pycache__
+tf_serv_save
