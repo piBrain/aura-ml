@@ -447,11 +447,11 @@ def experiment_fn(run_config, hparams):
 
     features = {
         'input': tf.VarLenFeature(dtype=tf.int32),
-        'input_sz': tf.FixedLenFeature(dtype=tf.int32)
+        'input_sz': tf.VarLenFeature(dtype=tf.int32)
     }
     serving_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(features)
 
-    stategy = tf.contrib.learn.make_export_strategy(serving_fn)
+    strategy = tf.contrib.learn.make_export_strategy(serving_fn)
 
     return Experiment(
         estimator=exp_estimator,
